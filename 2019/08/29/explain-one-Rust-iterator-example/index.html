@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="RUST教程中迭代器示例代码解析 示例12345678fn main() &#123;    let strings &#x3D; vec![&quot;tofu&quot;, &quot;93&quot;, &quot;18&quot;];    let possible_numbers: Vec&lt;_&gt; &#x3D; strings        .into_iter()        .map(|s|">
+<meta property="og:type" content="article">
+<meta property="og:title" content="explain one Rust iterator example">
+<meta property="og:url" content="https://zhaosima.github.io/2019/08/29/explain-one-Rust-iterator-example/">
+<meta property="og:site_name" content="WindFlow">
+<meta property="og:description" content="RUST教程中迭代器示例代码解析 示例12345678fn main() &#123;    let strings &#x3D; vec![&quot;tofu&quot;, &quot;93&quot;, &quot;18&quot;];    let possible_numbers: Vec&lt;_&gt; &#x3D; strings        .into_iter()        .map(|s|">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-08-29T07:08:42.000Z">
+<meta property="article:modified_time" content="2025-06-12T02:21:02.978Z">
+<meta property="article:author" content="WindFlow">
+<meta name="twitter:card" content="summary">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>explain one Rust iterator example</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="顶部" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/about/">关于</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="http://github.com/probberechts">项目</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" aria-label="上一篇" href="/2019/12/24/write-a-workline-follow-netty/"><i class="fa-solid fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" aria-label="下一篇" href="/2019/08/16/the-useful-tools-by-reading-golang-code-from-github/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="返回顶部" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="分享文章" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">上一篇</span>
+      <span id="i-next" class="info" style="display:none;">下一篇</span>
+      <span id="i-top" class="info" style="display:none;">返回顶部</span>
+      <span id="i-share" class="info" style="display:none;">分享文章</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://zhaosima.github.io/2019/08/29/explain-one-Rust-iterator-example/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://zhaosima.github.io/2019/08/29/explain-one-Rust-iterator-example/&text=explain one Rust iterator example"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://zhaosima.github.io/2019/08/29/explain-one-Rust-iterator-example/&title=explain one Rust iterator example"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://zhaosima.github.io/2019/08/29/explain-one-Rust-iterator-example/&is_video=false&description=explain one Rust iterator example"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=explain one Rust iterator example&body=Check out this article: https://zhaosima.github.io/2019/08/29/explain-one-Rust-iterator-example/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://zhaosima.github.io/2019/08/29/explain-one-Rust-iterator-example/&title=explain one Rust iterator example"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://zhaosima.github.io/2019/08/29/explain-one-Rust-iterator-example/&title=explain one Rust iterator example"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://zhaosima.github.io/2019/08/29/explain-one-Rust-iterator-example/&title=explain one Rust iterator example"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://zhaosima.github.io/2019/08/29/explain-one-Rust-iterator-example/&title=explain one Rust iterator example"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://zhaosima.github.io/2019/08/29/explain-one-Rust-iterator-example/&name=explain one Rust iterator example&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://zhaosima.github.io/2019/08/29/explain-one-Rust-iterator-example/&t=explain one Rust iterator example"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%A4%BA%E4%BE%8B"><span class="toc-number">1.</span> <span class="toc-text">示例</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Explain-Step-by-Step"><span class="toc-number">1.1.</span> <span class="toc-text">Explain Step by Step</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9B%B4%E6%9C%89%E8%B6%A3%E7%9A%84%E4%BE%8B%E5%AD%90"><span class="toc-number">2.</span> <span class="toc-text">更有趣的例子</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%BC%96%E5%90%8E%E8%AF%AD"><span class="toc-number">2.1.</span> <span class="toc-text">编后语</span></a></li></ol></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        explain one Rust iterator example
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">WindFlow</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2019-08-29T07:08:42.000Z" class="dt-published" itemprop="datePublished">2019-08-29</time>
+        
+      
+    </div>
+
+
+      
+
+      
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <p>RUST教程中迭代器示例代码解析</p>
+<h2 id="示例"><a href="#示例" class="headerlink" title="示例"></a><a target="_blank" rel="noopener" href="https://doc.rust-lang.org/stable/rust-by-example/error/iter_result.html#iterating-over-results">示例</a></h2><figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">strings</span> = <span class="built_in">vec!</span>[<span class="string">&quot;tofu&quot;</span>, <span class="string">&quot;93&quot;</span>, <span class="string">&quot;18&quot;</span>];</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">possible_numbers</span>: <span class="type">Vec</span>&lt;_&gt; = strings</span><br><span class="line">        .<span class="title function_ invoke__">into_iter</span>()</span><br><span class="line">        .<span class="title function_ invoke__">map</span>(|s| s.parse::&lt;<span class="type">i32</span>&gt;())</span><br><span class="line">        .<span class="title function_ invoke__">collect</span>();</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;Results: &#123;:?&#125;&quot;</span>, possible_numbers);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Results: [Err(ParseIntError &#123; kind: InvalidDigit &#125;), Ok(93), Ok(18)]</span><br></pre></td></tr></table></figure>
+
+<h3 id="Explain-Step-by-Step"><a href="#Explain-Step-by-Step" class="headerlink" title="Explain Step by Step"></a>Explain Step by Step</h3><p>将这段代码拆解如下：</p>
+<ol>
+<li>定义</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> <span class="variable">strings</span> = <span class="built_in">vec!</span>[<span class="string">&quot;tofu&quot;</span>, <span class="string">&quot;93&quot;</span>, <span class="string">&quot;18&quot;</span>]; </span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>获取迭代器</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> <span class="variable">iter</span> = strings.<span class="title function_ invoke__">into_iter</span>();</span><br></pre></td></tr></table></figure>
+<p>此时 iter 的类型是 vec::IntoIter&lt;&amp;str&gt;</p>
+<ol start="3">
+<li>map</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> <span class="variable">map</span> = iter.<span class="title function_ invoke__">map</span>(|s| s.parse::&lt;<span class="type">i32</span>&gt;());</span><br></pre></td></tr></table></figure>
+<p>此时 map 的类型是 Map&lt;vec::IntoIter&lt;&amp;str&gt;, fn (&amp;str) -&gt; Result &gt;</p>
+<ol start="4">
+<li>get numbers</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> <span class="variable">numbers</span> : <span class="type">Vec</span>&lt;_&gt;= map.<span class="title function_ invoke__">collect</span>();</span><br></pre></td></tr></table></figure>
+<p>collect 是 Iterator trait 自带的默认函数，而 Map&lt;,&gt; 实现了 Iterator。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">collect</span>&lt;B: FromIterator&lt;<span class="keyword">Self</span>::Item&gt;&gt;(<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> B <span class="keyword">where</span> <span class="keyword">Self</span>: <span class="built_in">Sized</span> &#123;</span><br><span class="line">        FromIterator::<span class="title function_ invoke__">from_iter</span>(<span class="keyword">self</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>代入上面的代码可得</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">collect</span>(self_map : <span class="built_in">Iterator</span>) <span class="punctuation">-&gt;</span> <span class="type">Vec</span>&lt;<span class="type">Result</span>&gt; &#123;</span><br><span class="line">        <span class="type">Vec</span>&lt;<span class="type">Result</span>&gt;::<span class="title function_ invoke__">from_iter</span>(self_map)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里就显现出 Rust 编译器的厉害之处了，由于我们指定了 B 的类型 (查看 numbers 的定义)，并且 Vec 实现了 FromIterator trait, 所以这里的 FromIterator::from_iter 会被替换为 Vec<Result>::from_iter。</p>
+<ol start="5">
+<li>Vec<T>::from_iter</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span>&lt;T&gt; FromIterator&lt;T&gt; <span class="keyword">for</span> <span class="title class_">Vec</span>&lt;T&gt; &#123;</span><br><span class="line">    <span class="meta">#[inline]</span></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">from_iter</span>&lt;I: <span class="built_in">IntoIterator</span>&lt;Item = T&gt;&gt;(iter: I) <span class="punctuation">-&gt;</span> <span class="type">Vec</span>&lt;T&gt; &#123;</span><br><span class="line">        &lt;<span class="keyword">Self</span> <span class="keyword">as</span> SpecExtend&lt;T, I::IntoIter&gt;&gt;::<span class="title function_ invoke__">from_iter</span>(iter.<span class="title function_ invoke__">into_iter</span>())</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>此处需要注意的一点, 每个实现了 Iterator 的类型都默认实现了 IntoIterator trait, into_iter 返回是 self， 所以还是 map。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span>&lt;T, I&gt; SpecExtend&lt;T, I&gt; <span class="keyword">for</span> <span class="title class_">Vec</span>&lt;T&gt;</span><br><span class="line">    <span class="keyword">where</span> I: <span class="built_in">Iterator</span>&lt;Item=T&gt;,</span><br><span class="line">&#123;</span><br><span class="line">    default <span class="keyword">fn</span> <span class="title function_">from_iter</span>(<span class="keyword">mut</span> iterator: I) <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">vector</span> = <span class="keyword">match</span> iterator.<span class="title function_ invoke__">next</span>() &#123;</span><br><span class="line">            <span class="literal">None</span> =&gt; <span class="keyword">return</span> <span class="type">Vec</span>::<span class="title function_ invoke__">new</span>(),</span><br><span class="line">            <span class="title function_ invoke__">Some</span>(element) =&gt; &#123;</span><br><span class="line">                <span class="keyword">let</span> (lower, _) = iterator.<span class="title function_ invoke__">size_hint</span>();</span><br><span class="line">                <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">vector</span> = <span class="type">Vec</span>::<span class="title function_ invoke__">with_capacity</span>(lower.<span class="title function_ invoke__">saturating_add</span>(<span class="number">1</span>));</span><br><span class="line">                <span class="keyword">unsafe</span> &#123;</span><br><span class="line">                    ptr::<span class="title function_ invoke__">write</span>(vector.<span class="title function_ invoke__">get_unchecked_mut</span>(<span class="number">0</span>), element);</span><br><span class="line">                    vector.<span class="title function_ invoke__">set_len</span>(<span class="number">1</span>);</span><br><span class="line">                &#125;</span><br><span class="line">                vector</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">        &lt;<span class="type">Vec</span>&lt;T&gt; <span class="keyword">as</span> SpecExtend&lt;T, I&gt;&gt;::<span class="title function_ invoke__">spec_extend</span>(&amp;<span class="keyword">mut</span> vector, iterator);</span><br><span class="line">        vector</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    default <span class="keyword">fn</span> <span class="title function_">spec_extend</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>, iter: I) &#123;</span><br><span class="line">        <span class="keyword">self</span>.<span class="title function_ invoke__">extend_desugared</span>(iter)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span>&lt;T&gt; <span class="type">Vec</span>&lt;T&gt; &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">extend_desugared</span>&lt;I: <span class="built_in">Iterator</span>&lt;Item = T&gt;&gt;(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>, <span class="keyword">mut</span> iterator: I) &#123;</span><br><span class="line">        <span class="keyword">while</span> <span class="keyword">let</span> <span class="variable">Some</span>(element) = iterator.<span class="title function_ invoke__">next</span>() &#123;</span><br><span class="line">            <span class="keyword">let</span> <span class="variable">len</span> = <span class="keyword">self</span>.<span class="title function_ invoke__">len</span>();</span><br><span class="line">            <span class="keyword">if</span> len == <span class="keyword">self</span>.<span class="title function_ invoke__">capacity</span>() &#123;</span><br><span class="line">                <span class="keyword">let</span> (lower, _) = iterator.<span class="title function_ invoke__">size_hint</span>();</span><br><span class="line">                <span class="keyword">self</span>.<span class="title function_ invoke__">reserve</span>(lower.<span class="title function_ invoke__">saturating_add</span>(<span class="number">1</span>));</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">unsafe</span> &#123;</span><br><span class="line">                ptr::<span class="title function_ invoke__">write</span>(<span class="keyword">self</span>.<span class="title function_ invoke__">get_unchecked_mut</span>(len), element);</span><br><span class="line">                <span class="keyword">self</span>.<span class="title function_ invoke__">set_len</span>(len + <span class="number">1</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>只要从 iterator 中取出的元素值不是 None, 就不断地将值插入新建的 Vec 中。</p>
+<ol start="6">
+<li>Map 是如何实现 Iterator trait</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">Map</span>&lt;I, F&gt; &#123;</span><br><span class="line">    iter: I,</span><br><span class="line">    f: F,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span>&lt;B, I: <span class="built_in">Iterator</span>, F&gt; <span class="built_in">Iterator</span> <span class="keyword">for</span> <span class="title class_">Map</span>&lt;I, F&gt; <span class="keyword">where</span> F: <span class="title function_ invoke__">FnMut</span>(I::Item) <span class="punctuation">-&gt;</span> B &#123;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">Item</span> = B;</span><br><span class="line"></span><br><span class="line">    <span class="meta">#[inline]</span></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">next</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">Option</span>&lt;B&gt; &#123;</span><br><span class="line">        <span class="keyword">self</span>.iter.<span class="title function_ invoke__">next</span>().<span class="title function_ invoke__">map</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>.f)</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// impl for Option</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">map</span>&lt;U, F: <span class="title function_ invoke__">FnOnce</span>(T) <span class="punctuation">-&gt;</span> U&gt;(<span class="keyword">self</span>, f: F) <span class="punctuation">-&gt;</span> <span class="type">Option</span>&lt;U&gt; &#123;</span><br><span class="line">        <span class="keyword">match</span> <span class="keyword">self</span> &#123;</span><br><span class="line">            <span class="title function_ invoke__">Some</span>(x) =&gt; <span class="title function_ invoke__">Some</span>(<span class="title function_ invoke__">f</span>(x)),</span><br><span class="line">            <span class="literal">None</span> =&gt; <span class="literal">None</span>,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>next() 拿到内部迭代器的 next value，并且通过 Option::map 转成另一个 Option&lt;B&gt; (B 就是 Result), 内部迭代器就是 vec::IntoIter。</p>
+<ol start="7">
+<li>vec::IntoIter</li>
+</ol>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">IntoIter</span>&lt;T&gt; &#123;</span><br><span class="line">    buf: NonNull&lt;T&gt;,</span><br><span class="line">    phantom: PhantomData&lt;T&gt;,</span><br><span class="line">    cap: <span class="type">usize</span>,</span><br><span class="line">    ptr: *<span class="keyword">const</span> T,</span><br><span class="line">    end: *<span class="keyword">const</span> T,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span>&lt;T&gt; <span class="built_in">Iterator</span> <span class="keyword">for</span> <span class="title class_">IntoIter</span>&lt;T&gt; &#123;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">Item</span> = T;</span><br><span class="line"></span><br><span class="line">    <span class="meta">#[inline]</span></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">next</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">Option</span>&lt;T&gt; &#123;</span><br><span class="line">        <span class="keyword">unsafe</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> <span class="keyword">self</span>.ptr <span class="keyword">as</span> *<span class="keyword">const</span> _ == <span class="keyword">self</span>.end &#123;</span><br><span class="line">                <span class="literal">None</span></span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="keyword">if</span> mem::size_of::&lt;T&gt;() == <span class="number">0</span> &#123;</span><br><span class="line">                    <span class="comment">// purposefully don&#x27;t use &#x27;ptr.offset&#x27; because for</span></span><br><span class="line">                    <span class="comment">// vectors with 0-size elements this would return the</span></span><br><span class="line">                    <span class="comment">// same pointer.</span></span><br><span class="line">                    <span class="keyword">self</span>.ptr = <span class="title function_ invoke__">arith_offset</span>(<span class="keyword">self</span>.ptr <span class="keyword">as</span> *<span class="keyword">const</span> <span class="type">i8</span>, <span class="number">1</span>) <span class="keyword">as</span> *<span class="keyword">mut</span> T;</span><br><span class="line"></span><br><span class="line">                    <span class="comment">// Make up a value of this ZST.</span></span><br><span class="line">                    <span class="title function_ invoke__">Some</span>(mem::<span class="title function_ invoke__">zeroed</span>())</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="keyword">let</span> <span class="variable">old</span> = <span class="keyword">self</span>.ptr;</span><br><span class="line">                    <span class="keyword">self</span>.ptr = <span class="keyword">self</span>.ptr.<span class="title function_ invoke__">offset</span>(<span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">                    <span class="title function_ invoke__">Some</span>(ptr::<span class="title function_ invoke__">read</span>(old))</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>通过指针移动读取每个 index 的值</p>
+<ol start="8">
+<li>示例完结</li>
+</ol>
+<p>可以看出在最终调用 collect() 之前，没有任何的元素读取，每一步操作返回的是有操作语义的 “取值子”。在 collect 之时，迭代器配合 FromIterator, 层层深入，最终取得了原始值，并通过 map 之后层层析出而后插入结果。</p>
+<h2 id="更有趣的例子"><a href="#更有趣的例子" class="headerlink" title="更有趣的例子"></a><a target="_blank" rel="noopener" href="https://doc.rust-lang.org/stable/rust-by-example/error/iter_result.html#fail-the-entire-operation-with-collect">更有趣的例子</a></h2><figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">strings</span> = <span class="built_in">vec!</span>[<span class="string">&quot;tofu&quot;</span>, <span class="string">&quot;93&quot;</span>, <span class="string">&quot;18&quot;</span>];</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">numbers</span>: <span class="type">Result</span>&lt;<span class="type">Vec</span>&lt;_&gt;, _&gt; = strings</span><br><span class="line">        .<span class="title function_ invoke__">into_iter</span>()</span><br><span class="line">        .<span class="title function_ invoke__">map</span>(|s| s.parse::&lt;<span class="type">i32</span>&gt;())</span><br><span class="line">        .<span class="title function_ invoke__">collect</span>();</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;Results: &#123;:?&#125;&quot;</span>, numbers);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Results: Err(ParseIntError &#123; kind: InvalidDigit &#125;)</span><br></pre></td></tr></table></figure>
+<p>这里和前面的例子几乎一摸一样，不同的只是返回值的类型声明变了，但得到的结果完全不同。<br>有了前面的分析，可以很容易想到为了能否符合 collect() 函数的约束， Result 必然实现了 FromIterator。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">from_iter</span>&lt;I: <span class="built_in">IntoIterator</span>&lt;Item=<span class="type">Result</span>&lt;A, E&gt;&gt;&gt;(iter: I) <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;V, E&gt; &#123;</span><br><span class="line">        <span class="keyword">struct</span> <span class="title class_">Adapter</span>&lt;Iter, E&gt; &#123;</span><br><span class="line">            iter: Iter,</span><br><span class="line">            err: <span class="type">Option</span>&lt;E&gt;,</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">impl</span>&lt;T, E, Iter: <span class="built_in">Iterator</span>&lt;Item=<span class="type">Result</span>&lt;T, E&gt;&gt;&gt; <span class="built_in">Iterator</span> <span class="keyword">for</span> <span class="title class_">Adapter</span>&lt;Iter, E&gt; &#123;</span><br><span class="line">            <span class="keyword">type</span> <span class="title class_">Item</span> = T;</span><br><span class="line"></span><br><span class="line">            <span class="meta">#[inline]</span></span><br><span class="line">            <span class="keyword">fn</span> <span class="title function_">next</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">Option</span>&lt;T&gt; &#123;</span><br><span class="line">                <span class="keyword">match</span> <span class="keyword">self</span>.iter.<span class="title function_ invoke__">next</span>() &#123;</span><br><span class="line">                    <span class="title function_ invoke__">Some</span>(<span class="title function_ invoke__">Ok</span>(value)) =&gt; <span class="title function_ invoke__">Some</span>(value),</span><br><span class="line">                    <span class="title function_ invoke__">Some</span>(<span class="title function_ invoke__">Err</span>(err)) =&gt; &#123;</span><br><span class="line">                        <span class="keyword">self</span>.err = <span class="title function_ invoke__">Some</span>(err);</span><br><span class="line">                        <span class="literal">None</span></span><br><span class="line">                    &#125;</span><br><span class="line">                    <span class="literal">None</span> =&gt; <span class="literal">None</span>,</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">fn</span> <span class="title function_">size_hint</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> (<span class="type">usize</span>, <span class="type">Option</span>&lt;<span class="type">usize</span>&gt;) &#123;</span><br><span class="line">                <span class="keyword">let</span> (_min, max) = <span class="keyword">self</span>.iter.<span class="title function_ invoke__">size_hint</span>();</span><br><span class="line">                (<span class="number">0</span>, max)</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">adapter</span> = Adapter &#123; iter: iter.<span class="title function_ invoke__">into_iter</span>(), err: <span class="literal">None</span> &#125;;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">v</span>: V = FromIterator::<span class="title function_ invoke__">from_iter</span>(adapter.<span class="title function_ invoke__">by_ref</span>());</span><br><span class="line"></span><br><span class="line">        <span class="keyword">match</span> adapter.err &#123;</span><br><span class="line">            <span class="title function_ invoke__">Some</span>(err) =&gt; <span class="title function_ invoke__">Err</span>(err),</span><br><span class="line">            <span class="literal">None</span> =&gt; <span class="title function_ invoke__">Ok</span>(v),</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>let v: V &#x3D; FromIterator::from_iter(adapter.by_ref()); 会被替换成 Vec::from_iter。<br>根据前面我们的分析，会进入 Adapter 的 next(), 当 iter 取值正常的时候插入 Vec, 当有错时记录错误并返回 None。 返回 None 则意味着 Vec::from_iter 的终止，此时虽然 v:Vec 记录了值，但由于错误的存在， Result 抛弃了 v 而返回了 Err。</p>
+<h3 id="编后语"><a href="#编后语" class="headerlink" title="编后语"></a>编后语</h3><p>阅读网页版的 Rust 源码不是种很好的体验，如果有 IDE 的帮助会省事不少。最大的收获是理解对 trait 具体实现的调用。</p>
+<p>另外有个小窍门，如何查看某个变量 x 的类型，只需要给 x 调用一个不存在的方法就可以了。例如：<br>x.do(); 编译器会报错并给出变量的类型。</p>
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">首页</a></li>
+        
+          <li><a href="/about/">关于</a></li>
+        
+          <li><a href="/archives/">归档</a></li>
+        
+          <li><a target="_blank" rel="noopener" href="http://github.com/probberechts">项目</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%A4%BA%E4%BE%8B"><span class="toc-number">1.</span> <span class="toc-text">示例</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Explain-Step-by-Step"><span class="toc-number">1.1.</span> <span class="toc-text">Explain Step by Step</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9B%B4%E6%9C%89%E8%B6%A3%E7%9A%84%E4%BE%8B%E5%AD%90"><span class="toc-number">2.</span> <span class="toc-text">更有趣的例子</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%BC%96%E5%90%8E%E8%AF%AD"><span class="toc-number">2.1.</span> <span class="toc-text">编后语</span></a></li></ol></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://zhaosima.github.io/2019/08/29/explain-one-Rust-iterator-example/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://zhaosima.github.io/2019/08/29/explain-one-Rust-iterator-example/&text=explain one Rust iterator example"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://zhaosima.github.io/2019/08/29/explain-one-Rust-iterator-example/&title=explain one Rust iterator example"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://zhaosima.github.io/2019/08/29/explain-one-Rust-iterator-example/&is_video=false&description=explain one Rust iterator example"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=explain one Rust iterator example&body=Check out this article: https://zhaosima.github.io/2019/08/29/explain-one-Rust-iterator-example/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://zhaosima.github.io/2019/08/29/explain-one-Rust-iterator-example/&title=explain one Rust iterator example"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://zhaosima.github.io/2019/08/29/explain-one-Rust-iterator-example/&title=explain one Rust iterator example"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://zhaosima.github.io/2019/08/29/explain-one-Rust-iterator-example/&title=explain one Rust iterator example"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://zhaosima.github.io/2019/08/29/explain-one-Rust-iterator-example/&title=explain one Rust iterator example"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://zhaosima.github.io/2019/08/29/explain-one-Rust-iterator-example/&name=explain one Rust iterator example&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://zhaosima.github.io/2019/08/29/explain-one-Rust-iterator-example/&t=explain one Rust iterator example"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> 菜单</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> 目录</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> 分享</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> 返回顶部</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2016-2025
+    WindFlow
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/about/">关于</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="http://github.com/probberechts">项目</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"复制到粘贴板！\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "复制成功！");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>

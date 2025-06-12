@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="Why use ConfigureAwait(false)思考当我们写下这样的代码时，发生了什么？ 12345678public async Task BuyJuice()&#123;    await WaitInQueue();    Pay();    await GetJuice();&#125;  What happened in async&#x2F;await内部原理参考这篇 文章">
+<meta property="og:type" content="article">
+<meta property="og:title" content="why use ConfigureAwait">
+<meta property="og:url" content="https://zhaosima.github.io/2018/12/14/why-use-ConfigureAwait/">
+<meta property="og:site_name" content="WindFlow">
+<meta property="og:description" content="Why use ConfigureAwait(false)思考当我们写下这样的代码时，发生了什么？ 12345678public async Task BuyJuice()&#123;    await WaitInQueue();    Pay();    await GetJuice();&#125;  What happened in async&#x2F;await内部原理参考这篇 文章">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2018-12-14T09:15:53.000Z">
+<meta property="article:modified_time" content="2025-06-12T02:21:03.007Z">
+<meta property="article:author" content="WindFlow">
+<meta name="twitter:card" content="summary">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>why use ConfigureAwait</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="顶部" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/about/">关于</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="http://github.com/probberechts">项目</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" aria-label="上一篇" href="/2018/12/17/how-the-async-await-works/"><i class="fa-solid fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" aria-label="下一篇" href="/2018/04/17/IL-vs-Reflection/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="返回顶部" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="分享文章" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">上一篇</span>
+      <span id="i-next" class="info" style="display:none;">下一篇</span>
+      <span id="i-top" class="info" style="display:none;">返回顶部</span>
+      <span id="i-share" class="info" style="display:none;">分享文章</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://zhaosima.github.io/2018/12/14/why-use-ConfigureAwait/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://zhaosima.github.io/2018/12/14/why-use-ConfigureAwait/&text=why use ConfigureAwait"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://zhaosima.github.io/2018/12/14/why-use-ConfigureAwait/&title=why use ConfigureAwait"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://zhaosima.github.io/2018/12/14/why-use-ConfigureAwait/&is_video=false&description=why use ConfigureAwait"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=why use ConfigureAwait&body=Check out this article: https://zhaosima.github.io/2018/12/14/why-use-ConfigureAwait/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://zhaosima.github.io/2018/12/14/why-use-ConfigureAwait/&title=why use ConfigureAwait"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://zhaosima.github.io/2018/12/14/why-use-ConfigureAwait/&title=why use ConfigureAwait"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://zhaosima.github.io/2018/12/14/why-use-ConfigureAwait/&title=why use ConfigureAwait"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://zhaosima.github.io/2018/12/14/why-use-ConfigureAwait/&title=why use ConfigureAwait"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://zhaosima.github.io/2018/12/14/why-use-ConfigureAwait/&name=why use ConfigureAwait&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://zhaosima.github.io/2018/12/14/why-use-ConfigureAwait/&t=why use ConfigureAwait"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Why-use-ConfigureAwait-false"><span class="toc-number">1.</span> <span class="toc-text">Why use ConfigureAwait(false)</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#What-happened-in-async-await"><span class="toc-number">1.1.</span> <span class="toc-text">What happened in async&#x2F;await</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#What%E2%80%99s-more"><span class="toc-number">1.2.</span> <span class="toc-text">What’s more</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Know-ExecuteionContext"><span class="toc-number">1.3.</span> <span class="toc-text">Know ExecuteionContext</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#What-is-SynchronizationContext"><span class="toc-number">1.4.</span> <span class="toc-text">What is SynchronizationContext</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Why-need-SynchronizationContext"><span class="toc-number">1.5.</span> <span class="toc-text">Why need SynchronizationContext</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#When-to-abandon-SynchronizationContext"><span class="toc-number">1.6.</span> <span class="toc-text">When to abandon SynchronizationContext</span></a></li></ol></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        why use ConfigureAwait
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">WindFlow</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2018-12-14T09:15:53.000Z" class="dt-published" itemprop="datePublished">2018-12-14</time>
+        
+      
+    </div>
+
+
+      
+
+      
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <h1 id="Why-use-ConfigureAwait-false"><a href="#Why-use-ConfigureAwait-false" class="headerlink" title="Why use ConfigureAwait(false)"></a>Why use ConfigureAwait(false)</h1><p>思考当我们写下这样的代码时，发生了什么？</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> async Task <span class="title function_">BuyJuice</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">    await <span class="title function_">WaitInQueue</span><span class="params">()</span>;</span><br><span class="line"></span><br><span class="line">    Pay();</span><br><span class="line"></span><br><span class="line">    await <span class="title function_">GetJuice</span><span class="params">()</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="What-happened-in-async-await"><a href="#What-happened-in-async-await" class="headerlink" title="What happened in async&#x2F;await"></a>What happened in async&#x2F;await</h2><p>内部原理参考这篇 <a target="_blank" rel="noopener" href="https://weblogs.asp.net/dixin/understanding-c-sharp-async-await-1-compilation">文章</a></p>
+<p>简单地来说，编译器会将 async 方法转化为 AsyncStateMachine。 而 await 会转化为 StateMachine.MoveNext() 方法内部的 GetAwaiter();。接着判断 awaiter 是否 Completed。 如果没有，则阻塞等待。 等待结束后，变更状态。如果还有后续任务，则继续调用MoveNext(); StateMachine 根据上一步的状态来决定当前的操作。</p>
+<p>需要注意的是，不管方法是否有 async 标识，只要返回了 Task，都是 awaitable 。</p>
+<h2 id="What’s-more"><a href="#What’s-more" class="headerlink" title="What’s more"></a>What’s more</h2><p>当创建一个 Task 的时候，会捕捉当前线程的 ExecuteionContext。当 Task Start 时，会将自己 push 到线程池的任务队列中。 当线程池调度到某个线程，线程会从池队列中捞取一个 Task。 然后通过 ExecuteionContext 的静态方法 RunXXX 来执行 Task。</p>
+<h2 id="Know-ExecuteionContext"><a href="#Know-ExecuteionContext" class="headerlink" title="Know ExecuteionContext"></a>Know ExecuteionContext</h2><blockquote>
+<p>The ExecutionContext class provides a single container for all information relevant to a logical thread of execution. This includes security context, call context, and synchronization context.<br>The ExecutionContext class provides the functionality for user code to capture and transfer this context across user-defined asynchronous points. The common language runtime ensures that the ExecutionContext is consistently transferred across runtime-defined asynchronous points within the managed process.”</p>
+</blockquote>
+<p>flow ExecutionContext 是指从创建 Task 时从一个线程中捕捉 ExecutionContext, 并在执行时”<em>复制</em>“到运行的线程中。主要是用来做数据共享。</p>
+<h2 id="What-is-SynchronizationContext"><a href="#What-is-SynchronizationContext" class="headerlink" title="What is SynchronizationContext"></a>What is SynchronizationContext</h2><p>SynchronizationContext 类是一个基类，可提供不带同步的自由线程上下文。 此类实现的同步模型的目的是使公共语言运行库内部的异步&#x2F;同步操作能够针对不同的异步模型采取正确的行为。此模型还简化了托管应用程序为在不同的同步环境下正常工作而必须遵循的一些要求。同步模型的提供程序可以扩展此类并为这些方法提供自己的实现。【MSDN】</p>
+<p>SynchronizationContext 提供了一种高级别的抽象。</p>
+<p>这篇<a target="_blank" rel="noopener" href="https://blogs.msdn.microsoft.com/pfxteam/2012/06/15/executioncontext-vs-synchronizationcontext/">文章</a>讲述了 ExecutionContext 与 SynchronizationContext 之间的差异。</p>
+<ol>
+<li>每个 async 方法都有自己的 SynchronizationContext</li>
+<li>不是每个线程都附加了 SynchronizationContext</li>
+<li>获取SynchronizationContext 通过 SynchronizationContext.Current。 通常 UI Thread , asp.net Thread 会设置该 Current。</li>
+</ol>
+<h2 id="Why-need-SynchronizationContext"><a href="#Why-need-SynchronizationContext" class="headerlink" title="Why need SynchronizationContext"></a>Why need SynchronizationContext</h2><p>简单的来说用于线程间通讯。</p>
+<p>这篇<a target="_blank" rel="noopener" href="https://www.codeproject.com/Articles/31971/Understanding-SynchronizationContext-Part-I">文章</a>深入浅出的讲解了 SynchronizationContext 的用处以及 Post , Send 方法的使用。</p>
+<h2 id="When-to-abandon-SynchronizationContext"><a href="#When-to-abandon-SynchronizationContext" class="headerlink" title="When to abandon SynchronizationContext"></a>When to abandon SynchronizationContext</h2><p>当我们不需要通过 SynchronizationContext 通讯的时候，或者说我们无需调用发起Task的那个线程的代码的时候。</p>
+<p>当采用 ConfigureAwait(continueOnCapturedContext:false) 时， 得到的是 ConfiguredTaskAwaiter。 这个awaiter 在continueOnCapturedContext等于false的时候，不会创建用于捕捉 SynchronizationContext 的 TaskContinuation(SynchronizationContextAwaitTaskContinuation)。</p>
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">首页</a></li>
+        
+          <li><a href="/about/">关于</a></li>
+        
+          <li><a href="/archives/">归档</a></li>
+        
+          <li><a target="_blank" rel="noopener" href="http://github.com/probberechts">项目</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Why-use-ConfigureAwait-false"><span class="toc-number">1.</span> <span class="toc-text">Why use ConfigureAwait(false)</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#What-happened-in-async-await"><span class="toc-number">1.1.</span> <span class="toc-text">What happened in async&#x2F;await</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#What%E2%80%99s-more"><span class="toc-number">1.2.</span> <span class="toc-text">What’s more</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Know-ExecuteionContext"><span class="toc-number">1.3.</span> <span class="toc-text">Know ExecuteionContext</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#What-is-SynchronizationContext"><span class="toc-number">1.4.</span> <span class="toc-text">What is SynchronizationContext</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Why-need-SynchronizationContext"><span class="toc-number">1.5.</span> <span class="toc-text">Why need SynchronizationContext</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#When-to-abandon-SynchronizationContext"><span class="toc-number">1.6.</span> <span class="toc-text">When to abandon SynchronizationContext</span></a></li></ol></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://zhaosima.github.io/2018/12/14/why-use-ConfigureAwait/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://zhaosima.github.io/2018/12/14/why-use-ConfigureAwait/&text=why use ConfigureAwait"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://zhaosima.github.io/2018/12/14/why-use-ConfigureAwait/&title=why use ConfigureAwait"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://zhaosima.github.io/2018/12/14/why-use-ConfigureAwait/&is_video=false&description=why use ConfigureAwait"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=why use ConfigureAwait&body=Check out this article: https://zhaosima.github.io/2018/12/14/why-use-ConfigureAwait/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://zhaosima.github.io/2018/12/14/why-use-ConfigureAwait/&title=why use ConfigureAwait"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://zhaosima.github.io/2018/12/14/why-use-ConfigureAwait/&title=why use ConfigureAwait"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://zhaosima.github.io/2018/12/14/why-use-ConfigureAwait/&title=why use ConfigureAwait"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://zhaosima.github.io/2018/12/14/why-use-ConfigureAwait/&title=why use ConfigureAwait"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://zhaosima.github.io/2018/12/14/why-use-ConfigureAwait/&name=why use ConfigureAwait&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://zhaosima.github.io/2018/12/14/why-use-ConfigureAwait/&t=why use ConfigureAwait"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> 菜单</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> 目录</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> 分享</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> 返回顶部</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2016-2025
+    WindFlow
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/about/">关于</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="http://github.com/probberechts">项目</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"复制到粘贴板！\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "复制成功！");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>

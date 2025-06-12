@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="the power usage of Aggregate因为阅读了某位作者文章的缘故，我也去翻了下.net Mvc启动管道的源码。在其中发现了这么一段代码： 12345678endContinuation &#x3D; filters.Reverse&lt;IActionFilter&gt;().Aggregate&lt;IActionFilter, Func&lt;Func&lt;ActionExecut">
+<meta property="og:type" content="article">
+<meta property="og:title" content="the power usage of Aggregate">
+<meta property="og:url" content="https://zhaosima.github.io/2017/09/14/the-power-usage-of-Aggregate/">
+<meta property="og:site_name" content="WindFlow">
+<meta property="og:description" content="the power usage of Aggregate因为阅读了某位作者文章的缘故，我也去翻了下.net Mvc启动管道的源码。在其中发现了这么一段代码： 12345678endContinuation &#x3D; filters.Reverse&lt;IActionFilter&gt;().Aggregate&lt;IActionFilter, Func&lt;Func&lt;ActionExecut">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2017-09-14T02:40:10.000Z">
+<meta property="article:modified_time" content="2025-06-12T02:21:03.003Z">
+<meta property="article:author" content="WindFlow">
+<meta name="twitter:card" content="summary">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>the power usage of Aggregate</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="顶部" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/about/">关于</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="http://github.com/probberechts">项目</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" aria-label="上一篇" href="/2017/09/14/IPhone-X-and-The-Future/"><i class="fa-solid fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" aria-label="下一篇" href="/2017/09/13/agreement-better-than-config/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="返回顶部" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="分享文章" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">上一篇</span>
+      <span id="i-next" class="info" style="display:none;">下一篇</span>
+      <span id="i-top" class="info" style="display:none;">返回顶部</span>
+      <span id="i-share" class="info" style="display:none;">分享文章</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://zhaosima.github.io/2017/09/14/the-power-usage-of-Aggregate/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://zhaosima.github.io/2017/09/14/the-power-usage-of-Aggregate/&text=the power usage of Aggregate"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://zhaosima.github.io/2017/09/14/the-power-usage-of-Aggregate/&title=the power usage of Aggregate"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://zhaosima.github.io/2017/09/14/the-power-usage-of-Aggregate/&is_video=false&description=the power usage of Aggregate"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=the power usage of Aggregate&body=Check out this article: https://zhaosima.github.io/2017/09/14/the-power-usage-of-Aggregate/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://zhaosima.github.io/2017/09/14/the-power-usage-of-Aggregate/&title=the power usage of Aggregate"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://zhaosima.github.io/2017/09/14/the-power-usage-of-Aggregate/&title=the power usage of Aggregate"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://zhaosima.github.io/2017/09/14/the-power-usage-of-Aggregate/&title=the power usage of Aggregate"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://zhaosima.github.io/2017/09/14/the-power-usage-of-Aggregate/&title=the power usage of Aggregate"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://zhaosima.github.io/2017/09/14/the-power-usage-of-Aggregate/&name=the power usage of Aggregate&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://zhaosima.github.io/2017/09/14/the-power-usage-of-Aggregate/&t=the power usage of Aggregate"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#the-power-usage-of-Aggregate"><span class="toc-number">1.</span> <span class="toc-text">the power usage of Aggregate</span></a></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        the power usage of Aggregate
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">WindFlow</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2017-09-14T02:40:10.000Z" class="dt-published" itemprop="datePublished">2017-09-14</time>
+        
+      
+    </div>
+
+
+      
+
+      
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <h2 id="the-power-usage-of-Aggregate"><a href="#the-power-usage-of-Aggregate" class="headerlink" title="the power usage of Aggregate"></a>the power usage of Aggregate</h2><p>因为阅读了某位作者文章的缘故，我也去翻了下.net Mvc启动管道的源码。在其中发现了这么一段代码：</p>
+<figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">endContinuation = filters.Reverse&lt;IActionFilter&gt;().Aggregate&lt;IActionFilter, Func&lt;Func&lt;ActionExecutedContext&gt;&gt;&gt;((Func&lt;Func&lt;ActionExecutedContext&gt;&gt;) (() =&gt;</span><br><span class="line">   &#123;</span><br><span class="line">     innerAsyncResult = <span class="keyword">this</span>.BeginInvokeActionMethod(controllerContext, actionDescriptor, parameters, asyncCallback, asyncState);</span><br><span class="line">     <span class="keyword">return</span> (Func&lt;ActionExecutedContext&gt;) (() =&gt; <span class="keyword">new</span> ActionExecutedContext(controllerContext, actionDescriptor, <span class="literal">false</span>, (Exception) <span class="literal">null</span>)</span><br><span class="line">     &#123;</span><br><span class="line">       Result = <span class="keyword">this</span>.EndInvokeActionMethod(innerAsyncResult)</span><br><span class="line">     &#125;);</span><br><span class="line">   &#125;), (Func&lt;Func&lt;Func&lt;ActionExecutedContext&gt;&gt;, IActionFilter, Func&lt;Func&lt;ActionExecutedContext&gt;&gt;&gt;) ((next, filter) =&gt; (Func&lt;Func&lt;ActionExecutedContext&gt;&gt;) (() =&gt; AsyncControllerActionInvoker.InvokeActionMethodFilterAsynchronously(filter, preContext, next))))();</span><br></pre></td></tr></table></figure>
+
+<p>一看之下，几乎要被它长长的气势所吓倒。其本质是Linq聚合函数，只不过一串Func实在太过耀眼。为了深入理解，我写了段相似代码来模拟运行。</p>
+<figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">TestFilters</span>()</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">var</span> filters = <span class="keyword">new</span> List&lt;IMyFilter&gt; &#123;<span class="keyword">new</span> MyFilter.FilterA(), <span class="keyword">new</span> MyFilter.FilterB(), <span class="keyword">new</span> MyFilter.FilterC()&#125;;</span><br><span class="line">    <span class="keyword">var</span> invoker = <span class="keyword">new</span> Invoker();</span><br><span class="line">    <span class="keyword">var</span> context = <span class="keyword">new</span> ExecutingContext();</span><br><span class="line">    <span class="keyword">var</span> endContinuation = filters.Aggregate&lt;IMyFilter, Func&lt;Func&lt;ExecutedContext&gt;&gt;&gt;((Func&lt;Func&lt;ExecutedContext&gt;&gt;)(() =&gt;</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">var</span> innerResult = invoker.BeginInvoke(context);</span><br><span class="line">        <span class="keyword">return</span> (Func&lt;ExecutedContext&gt;)(() =&gt; <span class="keyword">new</span> ExecutedContext()</span><br><span class="line">        &#123;</span><br><span class="line">            Result = invoker.EndInvoke(innerResult)</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;), (Func&lt;Func&lt;Func&lt;ExecutedContext&gt;&gt;, IMyFilter, Func&lt;Func&lt;ExecutedContext&gt;&gt;&gt;)((next, filter) =&gt; </span><br><span class="line">    (Func&lt;Func&lt;ExecutedContext&gt;&gt;)(() =&gt; InvokeAction(filter, context, next))))();</span><br><span class="line"></span><br><span class="line">    endContinuation();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">internal</span> <span class="keyword">static</span> Func&lt;ExecutedContext&gt; <span class="title">InvokeAction</span>(<span class="params">IMyFilter filter, ExecutingContext preContext, Func&lt;Func&lt;ExecutedContext&gt;&gt; nextInChain</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    filter.OnExecuting(preContext);</span><br><span class="line">    <span class="keyword">if</span> (preContext.Result != <span class="literal">null</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        ExecutedContext shortCircuitedPostContext = <span class="keyword">new</span> ExecutedContext()</span><br><span class="line">        &#123;</span><br><span class="line">            Result = preContext.Result</span><br><span class="line">        &#125;;</span><br><span class="line">        <span class="keyword">return</span> () =&gt; shortCircuitedPostContext;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">try</span></span><br><span class="line">    &#123;</span><br><span class="line">        Func&lt;ExecutedContext&gt; continuation = nextInChain();</span><br><span class="line">        <span class="keyword">return</span> (Func&lt;ExecutedContext&gt;)(() =&gt;</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="built_in">bool</span> flag = <span class="literal">true</span>;</span><br><span class="line">            ExecutedContext filterContext;</span><br><span class="line">            <span class="keyword">try</span></span><br><span class="line">            &#123;</span><br><span class="line">                filterContext = continuation();</span><br><span class="line">                flag = <span class="literal">false</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">catch</span> (Exception ex)</span><br><span class="line">            &#123;</span><br><span class="line">                filterContext = <span class="keyword">new</span> ExecutedContext();</span><br><span class="line">                filter.OnExecuted(filterContext);</span><br><span class="line">                <span class="keyword">if</span> (!filterContext.ExceptionHandled)</span><br><span class="line">                    <span class="keyword">throw</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (!flag)</span><br><span class="line">                filter.OnExecuted(filterContext);</span><br><span class="line">            <span class="keyword">return</span> filterContext;</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">catch</span> (Exception ex)</span><br><span class="line">    &#123;</span><br><span class="line">        ExecutedContext postContext = <span class="keyword">new</span> ExecutedContext();</span><br><span class="line">        filter.OnExecuted(postContext);</span><br><span class="line">        <span class="keyword">if</span> (postContext.ExceptionHandled)</span><br><span class="line">            <span class="keyword">return</span> (Func&lt;ExecutedContext&gt;)(() =&gt; postContext);</span><br><span class="line">        <span class="keyword">throw</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里的流程如下：</p>
+<blockquote>
+<p>集合：FilterA, FilterB, FilterC</p>
+</blockquote>
+<blockquote>
+<p>seed：seedFunc</p>
+</blockquote>
+<blockquote>
+<p>第一趟：FilterA, seedFunc &#x3D;&gt; nextFunc1</p>
+</blockquote>
+<blockquote>
+<p>第二趟：FilterB, nextFunc1 &#x3D;&gt; nextFunc2</p>
+</blockquote>
+<blockquote>
+<p>第三趟：FilterC, nextFunc2 &#x3D;&gt; nextFunc3</p>
+</blockquote>
+<p>循环结束，调用nextFunc3: </p>
+<blockquote>
+<p>FilterC.OnExecuting, call nextFunc2</p>
+</blockquote>
+<blockquote>
+<blockquote>
+<p>FilterB.OnExecuting, call nextFunc1</p>
+</blockquote>
+</blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<p>FilterA.OnExecuting, call seedFunc</p>
+</blockquote>
+</blockquote>
+</blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<p>invoker.BeginInvoke</p>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<p>invoker.EndInvoke</p>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<p>FilterA.OnExecuted</p>
+</blockquote>
+</blockquote>
+</blockquote>
+<blockquote>
+<blockquote>
+<p>FilterB.OnExecuting</p>
+</blockquote>
+</blockquote>
+<blockquote>
+<p>FilterC.OnExecuting</p>
+</blockquote>
+<p>从此，我们也可以窥见Mvc Action Filter的原理是什么。</p>
+<p>一般来说，我们对于Linq Aggregate 的运用都来自于很简单的例子，或者很常见的场景，比如字符串连接：</p>
+<figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">new</span> List&lt;String&gt;() &#123;<span class="string">&quot;aa&quot;</span>, <span class="string">&quot;bb&quot;</span>&#125;.Aggregate((t, e) =&gt; t + <span class="string">&quot;-&quot;</span> + e)</span><br></pre></td></tr></table></figure>
+
+<p>这么写谁都会，但涉及到复杂一点的东西，就不会想到用聚合来做。说到底，还是对某种概念的理解流于表面。例如，我们可以这样实现一个累加生成器：</p>
+<figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="title">Func</span>&lt;<span class="title">int</span>, <span class="title">int</span>&gt; <span class="title">Sumer</span>(<span class="params">IEnumerable&lt;<span class="built_in">int</span>&gt; seeds</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">return</span> seeds.Aggregate&lt;<span class="built_in">int</span>, Func&lt;<span class="built_in">int</span>, <span class="built_in">int</span>&gt;&gt;(x =&gt; x, (acc, number) =&gt; y =&gt; acc(number) + y);</span><br><span class="line">&#125;</span><br><span class="line">Sumer(<span class="keyword">new</span> [] &#123;<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>&#125;)(<span class="number">4</span>); <span class="comment">//10</span></span><br></pre></td></tr></table></figure>
+
+
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">首页</a></li>
+        
+          <li><a href="/about/">关于</a></li>
+        
+          <li><a href="/archives/">归档</a></li>
+        
+          <li><a target="_blank" rel="noopener" href="http://github.com/probberechts">项目</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#the-power-usage-of-Aggregate"><span class="toc-number">1.</span> <span class="toc-text">the power usage of Aggregate</span></a></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://zhaosima.github.io/2017/09/14/the-power-usage-of-Aggregate/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://zhaosima.github.io/2017/09/14/the-power-usage-of-Aggregate/&text=the power usage of Aggregate"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://zhaosima.github.io/2017/09/14/the-power-usage-of-Aggregate/&title=the power usage of Aggregate"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://zhaosima.github.io/2017/09/14/the-power-usage-of-Aggregate/&is_video=false&description=the power usage of Aggregate"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=the power usage of Aggregate&body=Check out this article: https://zhaosima.github.io/2017/09/14/the-power-usage-of-Aggregate/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://zhaosima.github.io/2017/09/14/the-power-usage-of-Aggregate/&title=the power usage of Aggregate"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://zhaosima.github.io/2017/09/14/the-power-usage-of-Aggregate/&title=the power usage of Aggregate"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://zhaosima.github.io/2017/09/14/the-power-usage-of-Aggregate/&title=the power usage of Aggregate"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://zhaosima.github.io/2017/09/14/the-power-usage-of-Aggregate/&title=the power usage of Aggregate"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://zhaosima.github.io/2017/09/14/the-power-usage-of-Aggregate/&name=the power usage of Aggregate&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://zhaosima.github.io/2017/09/14/the-power-usage-of-Aggregate/&t=the power usage of Aggregate"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> 菜单</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> 目录</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> 分享</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> 返回顶部</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2016-2025
+    WindFlow
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/about/">关于</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="http://github.com/probberechts">项目</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"复制到粘贴板！\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "复制成功！");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>

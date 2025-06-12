@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="简单流程1234567891011121314151617181920212223public class CustomEventListener : EventListener&#123;        protected override void OnEventSourceCreated(EventSource eventSource)        &#123;            if">
+<meta property="og:type" content="article">
+<meta property="og:title" content="How to view EventSource">
+<meta property="og:url" content="https://zhaosima.github.io/2020/01/20/how-to-view-EventSource/">
+<meta property="og:site_name" content="WindFlow">
+<meta property="og:description" content="简单流程1234567891011121314151617181920212223public class CustomEventListener : EventListener&#123;        protected override void OnEventSourceCreated(EventSource eventSource)        &#123;            if">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-01-20T02:05:00.000Z">
+<meta property="article:modified_time" content="2025-06-12T03:17:13.284Z">
+<meta property="article:author" content="WindFlow">
+<meta name="twitter:card" content="summary">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>How to view EventSource</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="顶部" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/about/">关于</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="http://github.com/probberechts">项目</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        
+        <li><a class="icon" aria-label="下一篇" href="/2019/12/24/write-a-workline-follow-netty/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="返回顶部" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="分享文章" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">上一篇</span>
+      <span id="i-next" class="info" style="display:none;">下一篇</span>
+      <span id="i-top" class="info" style="display:none;">返回顶部</span>
+      <span id="i-share" class="info" style="display:none;">分享文章</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://zhaosima.github.io/2020/01/20/how-to-view-EventSource/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://zhaosima.github.io/2020/01/20/how-to-view-EventSource/&text=How to view EventSource"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://zhaosima.github.io/2020/01/20/how-to-view-EventSource/&title=How to view EventSource"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://zhaosima.github.io/2020/01/20/how-to-view-EventSource/&is_video=false&description=How to view EventSource"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=How to view EventSource&body=Check out this article: https://zhaosima.github.io/2020/01/20/how-to-view-EventSource/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://zhaosima.github.io/2020/01/20/how-to-view-EventSource/&title=How to view EventSource"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://zhaosima.github.io/2020/01/20/how-to-view-EventSource/&title=How to view EventSource"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://zhaosima.github.io/2020/01/20/how-to-view-EventSource/&title=How to view EventSource"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://zhaosima.github.io/2020/01/20/how-to-view-EventSource/&title=How to view EventSource"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://zhaosima.github.io/2020/01/20/how-to-view-EventSource/&name=How to view EventSource&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://zhaosima.github.io/2020/01/20/how-to-view-EventSource/&t=How to view EventSource"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AE%80%E5%8D%95%E6%B5%81%E7%A8%8B"><span class="toc-number">1.</span> <span class="toc-text">简单流程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%9A%E5%88%B6%E5%8C%96"><span class="toc-number">2.</span> <span class="toc-text">定制化</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%AF%E9%85%8D%E7%BD%AE%E5%8C%96"><span class="toc-number">2.1.</span> <span class="toc-text">可配置化</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AE%9E%E9%99%85%E4%BD%BF%E7%94%A8"><span class="toc-number">2.2.</span> <span class="toc-text">实际使用</span></a></li></ol></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        How to view EventSource
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">WindFlow</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2020-01-20T02:05:00.000Z" class="dt-published" itemprop="datePublished">2020-01-20</time>
+        
+      
+    </div>
+
+
+      
+
+      
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <h2 id="简单流程"><a href="#简单流程" class="headerlink" title="简单流程"></a>简单流程</h2><figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title">CustomEventListener</span> : <span class="title">EventListener</span></span><br><span class="line">&#123;</span><br><span class="line">        <span class="function"><span class="keyword">protected</span> <span class="keyword">override</span> <span class="keyword">void</span> <span class="title">OnEventSourceCreated</span>(<span class="params">EventSource eventSource</span>)</span></span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">if</span> (eventSource.Name == <span class="string">&quot;what_event_i_want&quot;</span>)</span><br><span class="line">            &#123;</span><br><span class="line">                EnableEvents(eventSource, which_level_i_want);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">protected</span> <span class="keyword">override</span> <span class="keyword">void</span> <span class="title">OnEventWritten</span>(<span class="params">EventWrittenEventArgs eventData</span>)</span></span><br><span class="line">        &#123;</span><br><span class="line">             <span class="keyword">var</span> eventId = eventData.EventId;</span><br><span class="line">             <span class="comment">// print base information</span></span><br><span class="line"></span><br><span class="line">             <span class="keyword">if</span> (eventData.PayLoad == <span class="literal">null</span>) <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">             <span class="keyword">foreach</span> (<span class="keyword">var</span> payload <span class="keyword">in</span> eventData.PayLoad)</span><br><span class="line">             &#123;</span><br><span class="line">                 <span class="comment">// print payload</span></span><br><span class="line">             &#125;</span><br><span class="line">        &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在启动程序时加入</p>
+<figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">async</span> Task <span class="title">Main</span>(<span class="params"><span class="built_in">string</span>[] <span class="keyword">args</span></span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">var</span> listener = <span class="keyword">new</span> CustomEventListener();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// some some some</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="定制化"><a href="#定制化" class="headerlink" title="定制化"></a>定制化</h2><h3 id="可配置化"><a href="#可配置化" class="headerlink" title="可配置化"></a>可配置化</h3><p>进一步的将 <code>OnEventSourceCreated</code> 改造成可以代码配置化。</p>
+<figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title">EventMatchList</span> : <span class="title">List</span>&lt;<span class="title">EventMatch</span>&gt;</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">readonly</span> EventMatchList Instance = <span class="keyword">new</span> EventMatchList();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title">EventMatch</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">public</span> String SourceName &#123; <span class="keyword">get</span>; <span class="keyword">set</span>; &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> EventLevel LogLevel &#123; <span class="keyword">get</span>; <span class="keyword">set</span>; &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> List&lt;WriteEventMatch&gt; ArgsMatches &#123; <span class="keyword">get</span>; &#125; = <span class="keyword">new</span> ();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="keyword">class</span> <span class="title">CustomEventListener</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">override</span> <span class="keyword">void</span> <span class="title">OnEventSourceCreated</span>(<span class="params">EventSource eventSource</span>)</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">var</span> match = EventMatchList.Instance.FirstOrDefault(m =&gt; m.SourceName == eventSource.Name);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (match != <span class="literal">null</span>)</span><br><span class="line">        &#123;</span><br><span class="line">            EnableEvents(eventSource, match.LogLevel);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>更进一步的将 <code>OnEventWritten</code> 改造成可以代码配置化。</p>
+<figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title">WriteEventMatch</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">public</span> Func&lt;EventWrittenEventArgs, <span class="built_in">bool</span>&gt; Match &#123; <span class="keyword">get</span>; <span class="keyword">set</span>; &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> Action&lt;EventWrittenEventArgs&gt; Apply &#123; <span class="keyword">get</span>; <span class="keyword">set</span>; &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title">EventMatch</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">public</span> String SourceName &#123; <span class="keyword">get</span>; <span class="keyword">set</span>; &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> EventLevel LogLevel &#123; <span class="keyword">get</span>; <span class="keyword">set</span>; &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> List&lt;WriteEventMatch&gt; ArgsMatches &#123; <span class="keyword">get</span>; &#125; = <span class="keyword">new</span> ();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="keyword">class</span> <span class="title">CustomEventListener</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">override</span> <span class="keyword">void</span> <span class="title">OnEventWritten</span>(<span class="params">EventWrittenEventArgs eventData</span>)</span></span><br><span class="line">    &#123;</span><br><span class="line">         <span class="keyword">var</span> match = EventMatchList.Instance.FirstOrDefault(m =&gt; m.SourceName == eventData.EventSource.Name);</span><br><span class="line"></span><br><span class="line">         <span class="keyword">if</span> (match == <span class="literal">null</span>) <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">         <span class="keyword">foreach</span> (<span class="keyword">var</span> writeEventMatch <span class="keyword">in</span> match.ArgsMatches.Where(writeEventMatch =&gt; writeEventMatch.Match(eventData)))</span><br><span class="line">         &#123;</span><br><span class="line">             writeEventMatch.Apply(eventData);</span><br><span class="line">         &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="实际使用"><a href="#实际使用" class="headerlink" title="实际使用"></a>实际使用</h3><p>对常见的 <code>http client request</code> 增加日志</p>
+<p>首先查看系统源码</p>
+<figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[<span class="meta">EventSource(Name = <span class="string">&quot;Private.InternalDiagnostics.System.Net.Http&quot;</span>, LocalizationResources = <span class="string">&quot;FxResources.System.Net.Http.SR&quot;</span>)</span>]</span><br><span class="line"><span class="keyword">internal</span> <span class="keyword">sealed</span> <span class="keyword">class</span> <span class="title">NetEventSource</span> : <span class="title">EventSource</span></span><br></pre></td></tr></table></figure>
+
+<p>虽然是个内部类，但EventSourceName还是知道的，接下来根据名字注入行为即可。</p>
+<figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">InitEventMatch</span>()</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">var</span> eventMatch = <span class="keyword">new</span> EventMatch</span><br><span class="line">        &#123;</span><br><span class="line">            SourceName = <span class="string">&quot;Private.InternalDiagnostics.System.Net.Http&quot;</span>,</span><br><span class="line">            LogLevel = EventLevel.LogAlways,</span><br><span class="line">        &#125;;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">var</span> event8Match = <span class="keyword">new</span> WriteEventMatch()</span><br><span class="line">        &#123;</span><br><span class="line">            Match = e =&gt; e <span class="keyword">is</span> &#123; EventId: <span class="number">8</span>, Payload.Count: &gt;= <span class="number">5</span> &#125;, </span><br><span class="line">            Apply = e =&gt;</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="keyword">if</span> (e.Payload![<span class="number">4</span>] <span class="keyword">is</span> <span class="built_in">string</span> s)</span><br><span class="line">                &#123;</span><br><span class="line">                    <span class="comment">//Console.WriteLine($&quot;#&#123;e.EventId&#125;# &#123;e.EventName&#125; Message: &#123;s&#125;&quot;);</span></span><br><span class="line">                    Console.WriteLine(<span class="string">$&quot;#<span class="subst">&#123;Environment.CurrentManagedThreadId&#125;</span># Message: <span class="subst">&#123;s&#125;</span>&quot;</span>);</span><br><span class="line"></span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">        eventMatch.ArgsMatches.Add(event8Match);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">var</span> event1Match = <span class="keyword">new</span> WriteEventMatch()</span><br><span class="line">        &#123;</span><br><span class="line">            Match = e =&gt; e <span class="keyword">is</span> &#123; EventId: <span class="number">1</span>, Payload.Count: &gt;= <span class="number">3</span> &#125;, </span><br><span class="line">            Apply = e =&gt;</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="keyword">if</span> (e.Payload![<span class="number">2</span>] <span class="keyword">is</span> <span class="built_in">string</span> s)</span><br><span class="line">                &#123;</span><br><span class="line">                    Console.WriteLine(<span class="string">$&quot;<span class="subst">&#123;e.EventName&#125;</span> Message: <span class="subst">&#123;s&#125;</span>&quot;</span>);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//eventMatch.ArgsMatches.Add(event1Match);</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">var</span> event3Match = <span class="keyword">new</span> WriteEventMatch()</span><br><span class="line">        &#123;</span><br><span class="line">            Match = e =&gt; e <span class="keyword">is</span> &#123; EventId: <span class="number">3</span>, Payload.Count: &gt;= <span class="number">4</span> &#125;, </span><br><span class="line">            Apply = e =&gt;</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="keyword">if</span> (e.Payload![<span class="number">2</span>] <span class="keyword">is</span> <span class="built_in">string</span> first &amp;&amp; e.Payload![<span class="number">3</span>] <span class="keyword">is</span> <span class="built_in">string</span> second)</span><br><span class="line">                &#123;</span><br><span class="line">                    Console.WriteLine(<span class="string">$&quot;<span class="subst">&#123;e.EventName&#125;</span> Message: <span class="subst">&#123;first&#125;</span> &lt;==&gt; <span class="subst">&#123;second&#125;</span>&quot;</span>);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">        <span class="comment">//eventMatch.ArgsMatches.Add(event3Match);</span></span><br><span class="line"></span><br><span class="line">        EventMatchList.Instance.Add(eventMatch);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">async</span> Task <span class="title">Main</span>(<span class="params"><span class="built_in">string</span>[] <span class="keyword">args</span></span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    InitEventMatch();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">var</span> listener = <span class="keyword">new</span> CustomEventListener();</span><br><span class="line"></span><br><span class="line">    HttpGetDemo();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">首页</a></li>
+        
+          <li><a href="/about/">关于</a></li>
+        
+          <li><a href="/archives/">归档</a></li>
+        
+          <li><a target="_blank" rel="noopener" href="http://github.com/probberechts">项目</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AE%80%E5%8D%95%E6%B5%81%E7%A8%8B"><span class="toc-number">1.</span> <span class="toc-text">简单流程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%9A%E5%88%B6%E5%8C%96"><span class="toc-number">2.</span> <span class="toc-text">定制化</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%AF%E9%85%8D%E7%BD%AE%E5%8C%96"><span class="toc-number">2.1.</span> <span class="toc-text">可配置化</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AE%9E%E9%99%85%E4%BD%BF%E7%94%A8"><span class="toc-number">2.2.</span> <span class="toc-text">实际使用</span></a></li></ol></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://zhaosima.github.io/2020/01/20/how-to-view-EventSource/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://zhaosima.github.io/2020/01/20/how-to-view-EventSource/&text=How to view EventSource"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://zhaosima.github.io/2020/01/20/how-to-view-EventSource/&title=How to view EventSource"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://zhaosima.github.io/2020/01/20/how-to-view-EventSource/&is_video=false&description=How to view EventSource"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=How to view EventSource&body=Check out this article: https://zhaosima.github.io/2020/01/20/how-to-view-EventSource/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://zhaosima.github.io/2020/01/20/how-to-view-EventSource/&title=How to view EventSource"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://zhaosima.github.io/2020/01/20/how-to-view-EventSource/&title=How to view EventSource"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://zhaosima.github.io/2020/01/20/how-to-view-EventSource/&title=How to view EventSource"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://zhaosima.github.io/2020/01/20/how-to-view-EventSource/&title=How to view EventSource"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://zhaosima.github.io/2020/01/20/how-to-view-EventSource/&name=How to view EventSource&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://zhaosima.github.io/2020/01/20/how-to-view-EventSource/&t=How to view EventSource"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> 菜单</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> 目录</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> 分享</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> 返回顶部</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2016-2025
+    WindFlow
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/about/">关于</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="http://github.com/probberechts">项目</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"复制到粘贴板！\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "复制成功！");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>
