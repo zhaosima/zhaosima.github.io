@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="原文 我们一直在努力开发 Tokio 的下一个主要修订版 – Rust 的异步运行时。现在，对调度器完全的重写已经提交了 PR。这次改动带来了性能和延迟的巨大改善。一些基准测试显示速度提高了 10 倍。这类改进对“全栈”用例的影响程度始终不明确，因此我们还测试了这些调度器改进对 Hyper 和 Tonic 等用例的影响（剧透：效果确实不错）。 在准备开发新的调度器的过程中，我花了一些时间搜索关于调">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Making the Tokio scheduler 10x faster[翻译]">
+<meta property="og:url" content="https://zhaosima.github.io/2025/06/12/making-the-tokio-scheduler-10x-faster/">
+<meta property="og:site_name" content="WindFlow">
+<meta property="og:description" content="原文 我们一直在努力开发 Tokio 的下一个主要修订版 – Rust 的异步运行时。现在，对调度器完全的重写已经提交了 PR。这次改动带来了性能和延迟的巨大改善。一些基准测试显示速度提高了 10 倍。这类改进对“全栈”用例的影响程度始终不明确，因此我们还测试了这些调度器改进对 Hyper 和 Tonic 等用例的影响（剧透：效果确实不错）。 在准备开发新的调度器的过程中，我花了一些时间搜索关于调">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://zhaosima.github.io/img/gen_sched.png">
+<meta property="og:image" content="https://zhaosima.github.io/img/thread_pool.png">
+<meta property="og:image" content="https://zhaosima.github.io/img/shared.png">
+<meta property="og:image" content="https://zhaosima.github.io/img/work_stealing.png">
+<meta property="og:image" content="https://zhaosima.github.io/img/message_passing.png">
+<meta property="article:published_time" content="2025-06-12T08:27:06.000Z">
+<meta property="article:modified_time" content="2025-06-12T08:52:25.540Z">
+<meta property="article:author" content="WindFlow">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://zhaosima.github.io/img/gen_sched.png">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>Making the Tokio scheduler 10x faster[翻译]</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="顶部" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/about/">关于</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a href="/null">项目</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        
+        <li><a class="icon" aria-label="下一篇" href="/2020/01/20/how-to-view-EventSource/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="返回顶部" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="分享文章" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">上一篇</span>
+      <span id="i-next" class="info" style="display:none;">下一篇</span>
+      <span id="i-top" class="info" style="display:none;">返回顶部</span>
+      <span id="i-share" class="info" style="display:none;">分享文章</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://zhaosima.github.io/2025/06/12/making-the-tokio-scheduler-10x-faster/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://zhaosima.github.io/2025/06/12/making-the-tokio-scheduler-10x-faster/&text=Making the Tokio scheduler 10x faster[翻译]"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://zhaosima.github.io/2025/06/12/making-the-tokio-scheduler-10x-faster/&title=Making the Tokio scheduler 10x faster[翻译]"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://zhaosima.github.io/2025/06/12/making-the-tokio-scheduler-10x-faster/&is_video=false&description=Making the Tokio scheduler 10x faster[翻译]"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Making the Tokio scheduler 10x faster[翻译]&body=Check out this article: https://zhaosima.github.io/2025/06/12/making-the-tokio-scheduler-10x-faster/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://zhaosima.github.io/2025/06/12/making-the-tokio-scheduler-10x-faster/&title=Making the Tokio scheduler 10x faster[翻译]"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://zhaosima.github.io/2025/06/12/making-the-tokio-scheduler-10x-faster/&title=Making the Tokio scheduler 10x faster[翻译]"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://zhaosima.github.io/2025/06/12/making-the-tokio-scheduler-10x-faster/&title=Making the Tokio scheduler 10x faster[翻译]"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://zhaosima.github.io/2025/06/12/making-the-tokio-scheduler-10x-faster/&title=Making the Tokio scheduler 10x faster[翻译]"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://zhaosima.github.io/2025/06/12/making-the-tokio-scheduler-10x-faster/&name=Making the Tokio scheduler 10x faster[翻译]&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://zhaosima.github.io/2025/06/12/making-the-tokio-scheduler-10x-faster/&t=Making the Tokio scheduler 10x faster[翻译]"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%B0%83%E5%BA%A6%E5%99%A8%E6%98%AF%E6%80%8E%E4%B9%88%E5%B7%A5%E4%BD%9C%E7%9A%84"><span class="toc-number">1.</span> <span class="toc-text">调度器是怎么工作的</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%80%E4%B8%AA%E9%98%9F%E5%88%97%EF%BC%8C%E5%A4%9A%E4%B8%AA%E5%A4%84%E7%90%86%E5%99%A8"><span class="toc-number">1.1.</span> <span class="toc-text">一个队列，多个处理器</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B9%B6%E5%8F%91%E5%92%8C%E6%9C%BA%E6%A2%B0%E5%85%B1%E9%B8%A3"><span class="toc-number">1.2.</span> <span class="toc-text">并发和机械共鸣</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%A4%9A%E4%B8%AA%E5%A4%84%E7%90%86%E5%99%A8%EF%BC%8C%E6%AF%8F%E4%B8%AA%E9%83%BD%E6%9C%89%E8%87%AA%E5%B7%B1%E7%9A%84%E8%BF%90%E8%A1%8C%E9%98%9F%E5%88%97"><span class="toc-number">1.3.</span> <span class="toc-text">多个处理器，每个都有自己的运行队列</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B7%A5%E4%BD%9C%E7%AA%83%E5%8F%96%E8%B0%83%E5%BA%A6%E5%99%A8"><span class="toc-number">1.4.</span> <span class="toc-text">工作窃取调度器</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Tokio-0-1-%E8%B0%83%E5%BA%A6%E5%99%A8"><span class="toc-number">2.</span> <span class="toc-text">Tokio 0.1 调度器</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Tokio-%E4%B8%8B%E4%B8%80%E4%BB%A3%E8%B0%83%E5%BA%A6%E5%99%A8"><span class="toc-number">3.</span> <span class="toc-text">Tokio 下一代调度器</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%96%B0%E7%9A%84%E4%BB%BB%E5%8A%A1%E7%B3%BB%E7%BB%9F"><span class="toc-number">3.1.</span> <span class="toc-text">新的任务系统</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9B%B4%E5%A5%BD%E7%9A%84%E8%BF%90%E8%A1%8C%E9%98%9F%E5%88%97"><span class="toc-number">3.2.</span> <span class="toc-text">更好的运行队列</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%92%88%E5%AF%B9%E6%B6%88%E6%81%AF%E4%BC%A0%E9%80%92%E6%A8%A1%E5%BC%8F%E8%BF%9B%E8%A1%8C%E4%BC%98%E5%8C%96"><span class="toc-number">3.3.</span> <span class="toc-text">针对消息传递模式进行优化</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9C%89%E8%8A%82%E5%88%B6%E7%9A%84%E7%AA%83%E5%8F%96"><span class="toc-number">3.4.</span> <span class="toc-text">有节制的窃取</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%87%8F%E5%B0%91%E8%B7%A8%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5"><span class="toc-number">3.5.</span> <span class="toc-text">减少跨线程同步</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%87%8F%E5%B0%91%E5%88%86%E9%85%8D"><span class="toc-number">3.6.</span> <span class="toc-text">减少分配</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%87%8F%E5%B0%91%E5%8E%9F%E5%AD%90%E5%BC%95%E7%94%A8%E8%AE%A1%E6%95%B0"><span class="toc-number">3.7.</span> <span class="toc-text">减少原子引用计数</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8-Loom-%E5%AE%9E%E7%8E%B0%E6%97%A0%E7%95%8F%EF%BC%88%E4%B8%8D%E5%AE%89%E5%85%A8%EF%BC%89%E5%B9%B6%E5%8F%91"><span class="toc-number">4.</span> <span class="toc-text">使用 Loom 实现无畏（不安全）并发</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BB%93%E6%9E%9C"><span class="toc-number">5.</span> <span class="toc-text">结果</span></a></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        Making the Tokio scheduler 10x faster[翻译]
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">WindFlow</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2025-06-12T08:27:06.000Z" class="dt-published" itemprop="datePublished">2025-06-12</time>
+        
+      
+    </div>
+
+
+      
+
+      
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/hint.css/2.4.1/hint.min.css"><p><a target="_blank" rel="noopener" href="https://tokio.rs/blog/2019-10-scheduler">原文</a></p>
+<p>我们一直在努力开发 Tokio 的下一个主要修订版 – Rust 的异步运行时。现在，对调度器完全的重写已经提交了 PR。这次改动带来了性能和延迟的巨大改善。一些基准测试显示速度提高了 10 倍。这类改进对“全栈”用例的影响程度始终不明确，因此我们还测试了这些调度器改进对 Hyper 和 Tonic 等用例的影响（剧透：效果确实不错）。</p>
+<p>在准备开发新的调度器的过程中，我花了一些时间搜索关于调度器实现的资源。除了现有的实现之外，我几乎找不到什么资料。我还发现现有实现的源代码很难找到。为了解决这个问题，我尽量保持 Tokio 新的调度器实现尽可能简洁。我还写了这篇关于调度器实现的详细文章，希望对有类似情况的其他人有所帮助。</p>
+<p>本文首先概述了调度器的设计，包括工作窃取调度器。然后，本文详细介绍了新版 Tokio 调度器中的具体优化。</p>
+<p>本文还介绍了测试新的调度器。编写正确、并发、无锁的代码真的很难。慢而正确总比快而错误多要好，尤其是在这些错误与内存安全相关的情况下。然而，最好的选择是快速而正确，所以我们编写了 Loom，一个用于测试并发性的工具。</p>
+<p>来杯咖啡，放松一下吧。这将是一篇很长的文章。</p>
+<h2 id="调度器是怎么工作的"><a href="#调度器是怎么工作的" class="headerlink" title="调度器是怎么工作的"></a>调度器是怎么工作的</h2><p>调度器的作用是调度工作。应用程序被分解成多个工作单元，我们将其称为任务。当任务可以继续执行时，它处于可运行状态；当任务被外部资源阻塞时，它不再处于可运行状态（或空闲状态）。任务之间是独立的，因为任意数量的可运行任务都可以并发执行。调度器负责执行处于运行状态的任务，直到它们恢复到空闲状态。执行任务意味着为任务分配 CPU 时间（一种全局资源）。</p>
+<p>本文讨论了用户空间调度器，即运行在操作系统线程之上的调度器（而操作系统线程又由内核态调度器驱动）。Tokio 调度器执行 Rust Future，这些 Future 可以被认为是“异步绿色线程”。这是一种 <a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Thread_(computing)#M:N_(hybrid_threading)">M:N线程模式</a> ，其中许多用户态任务在少数操作系统线程上复用。</p>
+<p>调度器建模有很多种方法，每种方法都有其优缺点。最基本的，调度器可以建模为一个运行队列和一个清空队列的处理器。处理器是运行在线程上的一段代码。用伪代码来描述，它的作用如下：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span> <span class="keyword">let</span> <span class="variable">Some</span>(task) = <span class="keyword">self</span>.queue.<span class="title function_ invoke__">pop</span>() &#123;</span><br><span class="line">    task.<span class="title function_ invoke__">run</span>();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>当任务可运行时，它会被插入到运行队列中。</p>
+<p><img src="/../img/gen_sched.png" alt="alt text"></p>
+<p>虽然可以设计一个资源、任务和处理器都存在于单线程中的系统，但 Tokio 选择使用多线程。我们生活在一个计算机配备多 CPU 的世界。设计单线程调度器会导致硬件利用率不足。我们希望充分利用所有 CPU。有几种方法可以实现这一点：</p>
+<ul>
+<li>一个全局运行队列，多个处理器。</li>
+<li>多个处理器，每个处理器都有自己的运行队列。</li>
+</ul>
+<h3 id="一个队列，多个处理器"><a href="#一个队列，多个处理器" class="headerlink" title="一个队列，多个处理器"></a>一个队列，多个处理器</h3><p>在这个模型中，有一个单一的全局运行队列。当任务变为可运行时，它们会被推送到队列尾部。有多个处理器，每个处理器运行在单独的线程上。每个处理器都会从队列头部弹出，如果没有可用的任务，则会阻塞线程。</p>
+<p><img src="/../img/thread_pool.png" alt="alt text"></p>
+<p>运行队列必须支持多生产者和多消费者。常用的算法是侵入式链表。侵入式意味着任务结构包含指向运行队列中下一个任务的指针，而不是用链表节点包裹任务。这样可以避免推送和弹出操作的分配。可以使用无锁推送操作，但弹出操作需要<sup id="fnref:1"><a href="#fn:1" rel="footnote"><span class="hint--top hint--error hint--medium hint--rounded hint--bounce" aria-label="从技术上讲，实现无锁的多消费者队列是可行的。然而，实际应用中，正确避免锁所需的开销比仅仅使用互斥锁要大得多。">[1]</span></a></sup>互斥锁来协调消费者。</p>
+<p>这种方法通常用于实现通用线程池，因为它具有以下几个优点：</p>
+<ul>
+<li>任务调度公平。</li>
+<li>实现相对简单。现成的队列可以与上面概述的处理器循环配对。</li>
+</ul>
+<blockquote>
+<p>关于公平性的简要说明。调度公平性意味着任务的调度遵循先进先出的原则。先进入运行状态的任务将优先执行。通用调度器力求做到公平，但在某些情况下，例如使用 fork-join 进行并行计算时，唯一重要的因素是最终结果的计算速度，而不是每个子任务的公平性。</p>
+</blockquote>
+<p>这种调度模型有一个缺点。所有处理器都会争抢队列头部。对于通用线程池来说，这通常不是什么大问题。处理器执行任务的时间远远超过从运行队列中弹出任务的时间。当任务执行时间较长时，队列争用会减少。然而，Rust 的异步任务在从运行队列中弹出时，预计执行时间非常短。在这种情况下，队列争用的开销会变得非常大。</p>
+<h3 id="并发和机械共鸣"><a href="#并发和机械共鸣" class="headerlink" title="并发和机械共鸣"></a>并发和机械共鸣</h3><p>为了使程序获得最佳的运行时性能，我们必须在设计时充分考虑硬件的运作方式。“<a target="_blank" rel="noopener" href="https://mechanical-sympathy.blogspot.com/">机械共鸣</a>”这一术语最初由 Martin Thompson 应用于软件（他的博客虽然不再更新，但仍然包含许多相关知识）。</p>
+<p>关于现代硬件如何处理并发的详细讨论超出了本文的范围。从宏观角度来看，硬件性能的提升并非源于速度的提升，而是因为应用程序可以使用更多的 CPU 核心（我的笔记本电脑有 6 个！）。每个核心可以在极短的时间内执行大量计算。相对而言，缓存和内存访问等操作则需要更长的时间。因此，为了提高应用程序的运行速度，我们必须最大限度地增加每次内存访问的 CPU 指令数量。虽然编译器可以为我们完成很多工作，但作为开发者，我们需要考虑结构体布局和内存访问模式等问题。</p>
+<p>并发线程的行为与单线程非常相似，直到同一缓存行发生并发变更或请求顺序一致性为止。此时，CPU 的缓存一致性协议必须开始工作，以确保每个 CPU 的缓存保持最新状态。</p>
+<p>显而易见：尽可能避免跨线程同步，因为它很慢。</p>
+<h3 id="多个处理器，每个都有自己的运行队列"><a href="#多个处理器，每个都有自己的运行队列" class="headerlink" title="多个处理器，每个都有自己的运行队列"></a>多个处理器，每个都有自己的运行队列</h3><p>另一种建模调度器的方法是使用多个单线程调度器。每个处理器都有自己的运行队列，并且任务被固定到特定的处理器。这完全避免了同步问题。由于 Rust 的任务模型需要能够从任何线程将任务加入队列，因此仍然需要一种线程安全的方法将任务注入调度器。要么每个处理器的运行队列都支持线程安全的推送操作 (MPSC)，要么每个处理器都有两个运行队列：一个非同步队列和一个线程安全队列。</p>
+<p><img src="/../img/shared.png" alt="alt text"></p>
+<p>这是 <a target="_blank" rel="noopener" href="http://seastar.io/">Seastar</a> 使用的策略。由于几乎完全避免了同步，因此该策略速度非常快。然而，它并非灵丹妙药。除非工作负载完全均匀，否则某些处理器会处于空闲状态，而其他处理器则处于高负载状态，从而导致资源利用率不足。发生这种情况的原因是任务被固定到特定处理器。当单个处理器上的大量任务被批量调度时，即使其他处理器处于空闲状态，该处理器也需要负责处理峰值负载。</p>
+<p>大多数“现实世界”的工作负载并不均匀。因此，通用调度器往往会避免使用这种模型。</p>
+<h3 id="工作窃取调度器"><a href="#工作窃取调度器" class="headerlink" title="工作窃取调度器"></a>工作窃取调度器</h3><p>工作窃取调度器基于分片调度器模型构建，解决了利用率不足的问题。每个处理器维护自己的运行队列。变为可运行的任务会被推送到当前处理器的运行队列，而处理器则会清空其本地运行队列。但是，当某个处理器空闲时，它会检查其兄弟处理器的运行队列并尝试从中窃取任务。只有当处理器无法从兄弟运行队列中找到工作时，它才会进入休眠状态。</p>
+<p><img src="/../img/work_stealing.png" alt="alt text"></p>
+<p>在模型层面，这是一种“两全其美”的方法。在负载下，处理器独立运行，避免了同步开销。当负载在处理器之间分布不均匀时，调度器可以重新分配。由于这一特性，工作窃取调度器成为 Go、Erlang、Java 等语言的选择。</p>
+<p>缺点是这种方法要复杂得多；运行队列算法必须支持窃取操作，并且需要一些跨处理器同步才能保持系统平稳运行。如果操作不当，实现工作窃取模型的开销可能会大于所获得的收益。</p>
+<p>考虑以下情况：处理器 A 当前正在运行一个任务，并且有一个空的运行队列。处理器 B 处于空闲状态；它尝试窃取任务但失败了，因此进入睡眠状态。然后，处理器 A 正在执行的任务产生了 20 个任务。目标是唤醒处理器 B 并窃取其中一些新产生的任务。为了实现这一点，工作窃取调度器需要一些启发式算法，当处理器在其队列中发现新任务时，会向处于睡眠状态的兄弟处理器发出信号。当然，这会引入额外的同步，因此必须尽量减少此操作。</p>
+<p>总结：</p>
+<ul>
+<li>最小化同步是好的。</li>
+<li>工作窃取是通用调度器的首选算法。</li>
+<li>每个处理器基本上是独立的，但窃取需要一定的同步。</li>
+</ul>
+<h2 id="Tokio-0-1-调度器"><a href="#Tokio-0-1-调度器" class="headerlink" title="Tokio 0.1 调度器"></a>Tokio 0.1 调度器</h2><p>Tokio 于 2018 年 3 月首次发布了其工作窃取调度器。这是基于一些后来被证明是错误的假设的首次尝试。</p>
+<p>首先，Tokio 0.1 调度器假设处理器线程如果空闲一段时间就应该关闭。该调度器最初旨在作为 Rust 未来的“通用”线程池执行器。当调度器首次编写时，Tokio 仍处于“tokio-core”时代。当时，其模型是基于 I&#x2F;O 的任务将在与 I&#x2F;O 选择器（epoll、kqueue、iocp 等）共置的单个线程上执行。更多 CPU 密集型工作可以转移到线程池。在这种情况下，活动线程的数量应该灵活，关闭空闲线程更有意义。然而，该模型转变为在工作窃取调度器上运行所有异步任务，在这种情况下，保持少量线程始终处于活动状态更有意义。</p>
+<p>其次，它使用了 <a target="_blank" rel="noopener" href="https://github.com/crossbeam-rs/crossbeam">Crossbeam</a> 双端队列实现。该实现基于 <a target="_blank" rel="noopener" href="https://www.dre.vanderbilt.edu/~schmidt/PDF/work-stealing-dequeue.pdf">Chase-Lev</a> 双端队列，由于下文所述的原因，该双端队列不太适合调度独立异步任务的用例。</p>
+<p>第三，实现过于复杂。部分原因是这是我的第一个调度器实现。此外，我过于急于在代码路径中使用原子操作，而互斥锁本来就足够了。一个重要的教训是，在很多情况下，互斥锁才是最佳选择。</p>
+<p>最后，原始实现存在许多小的效率低下之处。Rust 异步模型的细节在早期发生了显著的变化，但这些库在那些年里一直保持着 API 的稳定性。这导致了一些积累债，现在可以偿还了。</p>
+<p>随着Tokio即将发布其首个重大突破作品，我们可以用这些年来积累的经验来偿还所有债务。这是一个激动人心的时刻！</p>
+<h2 id="Tokio-下一代调度器"><a href="#Tokio-下一代调度器" class="headerlink" title="Tokio 下一代调度器"></a>Tokio 下一代调度器</h2><p>现在，是时候深入研究新调度器中的更改了。</p>
+<h3 id="新的任务系统"><a href="#新的任务系统" class="headerlink" title="新的任务系统"></a>新的任务系统</h3><p>首先，需要强调的是，虽然 Tokio 本身并不包含这个功能，但对一些已实现的改进至关重要：<a target="_blank" rel="noopener" href="https://doc.rust-lang.org/std/task/index.html">新任务系统</a> 包含在 <code>std</code>，主要由 Taylor Cramer 设计。该系统提供了调度器执行 Rust 异步任务必须实现的钩子，而且做得非常出色。它比之前的版本更轻量，也更灵活。<code>std</code></p>
+<p><code>Waker</code> 结构体由资源持有，用于指示任务已可运行并被推送到调度器的运行队列中。在新的任务系统中，<code>Waker</code> 结构体只有两个指针宽，而以前要大得多。缩小其大小非常重要，这样可以最大限度地减少复制 <code>Waker</code> 值的开销，并减少结构体占用的空间，从而允许更多关键数据容纳在缓存行中。自定义虚表设计支持多项优化，稍后将对此进行讨论。</p>
+<h3 id="更好的运行队列"><a href="#更好的运行队列" class="headerlink" title="更好的运行队列"></a>更好的运行队列</h3><p>运行队列是调度器的核心，因此，它可能是需要正确处理的最重要的组件。最初的 Tokio 调度器使用了 Crossbeam 的双端队列实现，即单生产者、多消费者双端队列。任务被推送到队列的一端，值则从另一端弹出。大多数情况下，推送值的线程会弹出该值，但是，其他线程偶尔也会通过自己弹出值来“窃取”数据。双端队列由一个数组和一组跟踪队列头部和尾部的索引支持。当双端队列已满时，向队列推送数据将导致存储空间增加。此时，系统会分配一个新的、更大的数组，并将值移动到新的存储空间中。</p>
+<p>双端队列的增长能力带来了复杂性和开销。推送&#x2F;弹出操作必须将这种增长考虑在内。此外，在增长时，释放原始数组会带来额外的困难。在支持垃圾回收的语言中，旧数组会超出范围，最终会被 GC 释放。然而，Rust 并不支持 GC。这意味着我们负责释放数组，但线程可能正在并发访问内存。Crossbeam 对此的解决方案是使用<a target="_blank" rel="noopener" href="https://aturon.github.io/blog/2015/08/27/epoch/#epoch-based-reclamation">基于 epoch 的回收策略</a>。虽然开销并不大，但它确实会在热路径中增加不小的开销。现在，每个操作在进入和退出临界区时都必须发出原子 RMW（读取-修改-写入）操作，以向其他线程发出内存正在使用中并避免释放的信号。</p>
+<p>由于增加运行队列会产生成本，因此值得研究是否有必要增加队列。这个问题最终促使我们重写了调度器。新调度器的策略是使用固定大小的每个进程队列。当队列已满时，任务不会被增加到本地队列，而是会被推送到一个全局的、多消费者、多生产者的队列中。处理器需要偶尔检查这个全局队列，但频率远低于本地队列。</p>
+<p>一项早期实验用有界的 mpmc 队列取代了 Crossbeam 队列。由于推送和弹出操作需要执行大量的同步操作，这并没有带来太大的改进。关于工作窃取用例，需要记住的一点是，在负载下，由于每个处理器只访问自己的队列，因此队列上几乎没有争用。</p>
+<p>此时，我选择仔细阅读 Go 源代码，发现他们使用了一个固定大小的单生产者、多消费者队列。这个队列最令人印象深刻的地方在于它几乎不需要同步就能运行。我最终调整了该算法，并将其用于 Tokio 调度器，并做了一些修改。值得注意的是，Go 实现的原子操作使用了顺序一致性（基于我对 Go 有限的了解）。作为 Tokio 调度器一部分实现的版本也减少了一些不太常用的代码路径中的复制操作。</p>
+<p>该队列实现是一个循环缓冲区，使用数组存储值。原子整数用于跟踪头部和尾部的位置。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">Queue</span> &#123;</span><br><span class="line">    <span class="comment">/// Concurrently updated by many threads.</span></span><br><span class="line">    head: AtomicU32,</span><br><span class="line"></span><br><span class="line">    <span class="comment">/// Only updated by producer thread but read by many threads.</span></span><br><span class="line">    tail: AtomicU32,</span><br><span class="line"></span><br><span class="line">    <span class="comment">/// Masks the head / tail position value to obtain the index in the buffer.</span></span><br><span class="line">    mask: <span class="type">usize</span>,</span><br><span class="line"></span><br><span class="line">    <span class="comment">/// Stores the tasks.</span></span><br><span class="line">    buffer: <span class="type">Box</span>&lt;[MaybeUninit&lt;Task&gt;]&gt;,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>注意 <em>文中提到的代码都是较低版本的，最新版本类型命名和逻辑都有调整</em></p>
+<p>推送到队列中是由单个线程完成的：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">loop</span> &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">head</span> = <span class="keyword">self</span>.head.<span class="title function_ invoke__">load</span>(Acquire);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// safety: this is the **only** thread that updates this cell.</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">tail</span> = <span class="keyword">self</span>.tail.<span class="title function_ invoke__">unsync_load</span>();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> tail.<span class="title function_ invoke__">wrapping_sub</span>(head) &lt; <span class="keyword">self</span>.buffer.<span class="title function_ invoke__">len</span>() <span class="keyword">as</span> <span class="type">u32</span> &#123;</span><br><span class="line">        <span class="comment">// Map the position to a slot index.</span></span><br><span class="line">        <span class="keyword">let</span> <span class="variable">idx</span> = tail <span class="keyword">as</span> <span class="type">usize</span> &amp; <span class="keyword">self</span>.mask;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Don&#x27;t drop the previous value in `buffer[idx]` because</span></span><br><span class="line">        <span class="comment">// it is uninitialized memory.</span></span><br><span class="line">        <span class="keyword">self</span>.buffer[idx].<span class="title function_ invoke__">as_mut_ptr</span>().<span class="title function_ invoke__">write</span>(task);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Make the task available</span></span><br><span class="line">        <span class="keyword">self</span>.tail.<span class="title function_ invoke__">store</span>(tail.<span class="title function_ invoke__">wrapping_add</span>(<span class="number">1</span>), Release);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// The local buffer is full. Push a batch of work to the global</span></span><br><span class="line">    <span class="comment">// queue.</span></span><br><span class="line">    <span class="keyword">match</span> <span class="keyword">self</span>.<span class="title function_ invoke__">push_overflow</span>(task, head, tail, global) &#123;</span><br><span class="line">        <span class="title function_ invoke__">Ok</span>(_) =&gt; <span class="keyword">return</span>,</span><br><span class="line">        <span class="comment">// Lost the race, try again</span></span><br><span class="line">        <span class="title function_ invoke__">Err</span>(v) =&gt; task = v,</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>请注意，在此<code>push</code>函数中，唯一的原子操作是采用 <code>Acquire</code> 顺序的加载和采用 <code>Release</code> 顺序的存储。没有读-修改-写操作（<code>compare_and_swap</code>、<code>fetch_and</code> 等）或顺序一致性。这一点很重要，因为在 x86 芯片上，所有加载&#x2F;存储都已经是“原子”的。因此，在 CPU 级别，<a target="_blank" rel="noopener" href="https://www.justsoftwaresolutions.co.uk/threading/intel-memory-ordering-and-c++-memory-model.html">此函数没有同步</a>。使用原子操作会影响编译器，因为它会阻止某些优化，但仅此而已。第一次加载很可能可以使用 <code>Relaxed</code> 顺序安全地完成，但在切换方面没有明显的收益。</p>
+<p>当队列已满时，将调用 <code>push_overflow</code>。此函数将本地队列中一半的任务移动到全局队列中。全局队列是一个由互斥锁保护的侵入式链表。移动到全局队列的任务首先链接在一起，然后获取互斥锁，并通过更新全局队列的尾指针插入所有任务。这使得临界区保持较小。</p>
+<p>如果您熟悉原子内存排序的细节，您可能会注意到如上所示的 <code>push</code> 函数存在一个潜在的“问题”。采用 <code>Acquire</code> 排序的原子加载非常弱。它可能会返回过时的值，例如，并发的窃取操作可能已经增加了 <code>self.head</code> 的值，但执行推送的线程在缓存中有一个旧值，因此它没有注意到窃取操作。这对于算法的正确性来说不是什么问题。在 <code>push</code> 的快速路径中，我们只关心本地运行队列是否已满。鉴于当前线程是唯一可以推送到运行队列的线程，过时的加载会导致运行队列看起来比实际更满。它可能会错误地判断队列已满并进入 <code>push_overflow</code> 函数，但该函数包含一个更强的原子操作。如果 <code>push_overflow</code> 确定队列实际上未满，它将返回 w&#x2F;<code>Err</code> 并重试推送操作。这也是 <code>push_overflow</code> 将一半运行队列移动到全局队列的另一个原因。通过移动一半的队列，“运行队列为空”的误报发生的频率大大降低。</p>
+<p>本地 <code>pop</code>（来自拥有队列的处理器）也是轻量级的：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">loop</span> &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">head</span> = <span class="keyword">self</span>.head.<span class="title function_ invoke__">load</span>(Acquire);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// safety: this is the **only** thread that updates this cell.</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">tail</span> = <span class="keyword">self</span>.tail.<span class="title function_ invoke__">unsync_load</span>();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> head == tail &#123;</span><br><span class="line">        <span class="comment">// queue is empty</span></span><br><span class="line">        <span class="keyword">return</span> <span class="literal">None</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Map the head position to a slot index.</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">idx</span> = head <span class="keyword">as</span> <span class="type">usize</span> &amp; <span class="keyword">self</span>.mask;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">task</span> = <span class="keyword">self</span>.buffer[idx].<span class="title function_ invoke__">as_ptr</span>().<span class="title function_ invoke__">read</span>();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Attempt to claim the task read above.</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">actual</span> = <span class="keyword">self</span></span><br><span class="line">        .head</span><br><span class="line">        .<span class="title function_ invoke__">compare_and_swap</span>(head, head.<span class="title function_ invoke__">wrapping_add</span>(<span class="number">1</span>), Release);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> actual == head &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="title function_ invoke__">Some</span>(task.<span class="title function_ invoke__">assume_init</span>());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在这个函数中，只有一个原子加载和一个带有释放的 <code>compare_and_swap</code> 操作。主要的开销来自 <code>compare_and_swap</code> 操作。</p>
+<p><code>steal</code> 函数与 <code>pop</code> 函数类似，但 <code>self.tail</code> 的加载必须是原子的。此外，与 <code>push_overflow</code> 类似，<code>steal</code> 操作会尝试获取队列的一半，而不是单个任务。这有一些不错的特性，我们稍后会介绍。</p>
+<p>最后一个缺失的部分是全局队列的使用。该队列用于处理处理器本地队列的溢出，以及从非处理器线程向调度器提交任务。如果处理器处于负载状态，即本地运行队列中有任务。处理器会在执行完本地队列中大约 60 个任务后尝试从全局队列中弹出任务。它还会在“搜索”状态（如下所述）时检查全局队列。</p>
+<h3 id="针对消息传递模式进行优化"><a href="#针对消息传递模式进行优化" class="headerlink" title="针对消息传递模式进行优化"></a>针对消息传递模式进行优化</h3><p>使用 Tokio 编写的应用程序通常由许多独立的小任务组成。这些任务将通过消息传递相互通信。这种模式类似于 Go 和 Erlang 等其他语言。鉴于这种模式的普遍性，调度器尝试对其进行优化是合理的。</p>
+<p>给定任务 A 和任务 B。任务 A 当前正在执行，并通过通道向任务 B 发送一条消息。该通道是任务 B 当前被阻塞的资源，因此发送消息的操作将导致任务 B 转换为可运行状态，并被推送到当前处理器的运行队列中。然后，处理器将从运行队列中弹出下一个任务并执行它，并重复此过程，直到到达任务 B。</p>
+<p>问题在于，从消息发送到任务 B 执行之间可能会存在显著的延迟。此外，诸如消息之类的“热”数据在发送时会存储在 CPU 缓存中，但到任务 B 被调度时，相关缓存很可能已被清除。</p>
+<p>为了解决这个问题，新的 Tokio 调度器实现了一项优化（Go 和 Kotlin 的调度器也采用了这种优化）。当任务转换为可运行状态时，它不会被推送到运行队列的末尾，而是会被存储在一个特殊的“下一个任务”槽中（next task slot）。处理器总是会在检查运行队列之前先检查这个槽。当将任务插入到这个槽中时，如果其中已经存储了任务，则旧任务将从槽中移除并推送到运行队列的末尾。在消息传递的情况下，这将导致消息的接收者被调度为下一个运行任务。</p>
+<p><img src="/../img/message_passing.png" alt="alt text"></p>
+<h3 id="有节制的窃取"><a href="#有节制的窃取" class="headerlink" title="有节制的窃取"></a>有节制的窃取</h3><p>在工作窃取调度器中，当某个处理器的运行队列为空时，该处理器将尝试从其兄弟处理器窃取任务。为此，系统会随机选择一个兄弟处理器作为起点，并对该兄弟处理器执行窃取操作。如果没有找到任务，则尝试下一个兄弟处理器，依此类推，直到找到任务为止。</p>
+<p>实践中，许多处理器经常会同时完成其运行队列的处理。这种情况发生在一批工作到达时（例如，当 epoll 轮询套接字就绪状态时）。处理器被唤醒，获取任务，运行它们，然后完成。这会导致所有处理器同时尝试窃取资源，这意味着许多线程会尝试访问相同的队列。这会造成争用。随机选择起始点有助于减少争用，但仍然可能造成严重后果。</p>
+<p>为了解决这个问题，新的调度器限制了执行窃取操作的并发处理器数量。我们将处理器尝试窃取的处理器状态称为“搜索工作”，或简称为“搜索”状态（稍后会介绍）。这项优化是通过设置一个原子整数来实现的，处理器在开始搜索之前会递增该值，退出搜索状态时会递减该值。搜索器的最大数量是处理器总数的一半。话虽如此，这个限制比较随意，但这没问题。我们不需要对搜索器的数量进行硬性限制，只需要一个节流阀即可。我们用精度换取算法效率。</p>
+<p>一旦进入搜索状态，处理器就会尝试从兄弟处理器那里窃取并检查全局队列。</p>
+<h3 id="减少跨线程同步"><a href="#减少跨线程同步" class="headerlink" title="减少跨线程同步"></a>减少跨线程同步</h3><p>工作窃取调度器的另一个关键部分是同级通知。当处理器观察到新任务时，它会通知同级处理器。如果同级处理器处于休眠状态，它会被唤醒并窃取任务。通知操作还有另一个关键职责。回想一下，队列算法使用了弱原子排序（获取&#x2F;释放）。由于原子内存排序的工作原理，如果没有额外的同步，就无法保证同级处理器能够看到队列中要窃取的任务。通知操作还负责建立必要的同步，以便同级处理器能够看到任务并窃取它们。这些要求使得通知操作的成本很高。目标是在不导致 CPU 利用率过低的情况下尽可能少地执行通知操作，即处理器有任务而同级处理器无法窃取它们。过于急切的通知会导致惊群效应。</p>
+<p>最初的 Tokio 调度器采用了一种简单的通知方法。每当有新任务被推送到运行队列时，处理器都会收到通知。每当一个处理器被唤醒并收到通知并找到任务时，它就会通知另一个处理器。这种逻辑很快就会导致所有处理器都被唤醒并开始寻找工作（从而引发争用）。很多时候，这些处理器中的大多数都找不到工作，于是又回到了睡眠状态。</p>
+<p>新的调度器借用了 Go 调度器中使用的相同技术，显著改进了这一点。通知的尝试时间点与之前的调度器相同，但是，只有当没有处于搜索状态的处理器时（参见上一节）才会发出通知。当一个处理器收到通知时，它会立即转换为搜索状态。当处于搜索状态的处理器发现新任务时，它会先退出搜索状态，然后通知另一个处理器。</p>
+<p>这种逻辑可以限制处理器唤醒的速度。如果同时调度一批任务（例如，当使用 epoll 轮询套接字就绪状态时），第一个任务将通知一个处理器。该处理器现在处于搜索状态。由于至少有一个处理器处于搜索状态，批次中其余的调度任务将不会通知处理器。收到通知的处理器将窃取批次中一半的任务，并反过来通知另一个处理器。第三个处理器将被唤醒，从前两个处理器中的一个处理器中查找任务，并窃取其中一半的任务。这使得处理器能够平稳提升，并且任务负载能够快速平衡。</p>
+<h3 id="减少分配"><a href="#减少分配" class="headerlink" title="减少分配"></a>减少分配</h3><p>新的 Tokio 调度器只需要每个生成的任务进行一次分配，而旧的需要两个。以前，Task 结构体如下所示：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">Task</span> &#123;</span><br><span class="line">    <span class="comment">/// All state needed to manage the task</span></span><br><span class="line">    state: TaskState,</span><br><span class="line"></span><br><span class="line">    <span class="comment">/// The logic to run is represented as a future trait object.</span></span><br><span class="line">    future: <span class="type">Box</span>&lt;<span class="keyword">dyn</span> Future&lt;Output = ()&gt;&gt;,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>Task</code> 结构体也会被分配到一个 <code>Box</code> 中。这一直是我很久以来一直想修复的一个缺陷（我第一次尝试修复是在 2014 年）。自旧版 Tokio 调度程序以来，有两件事发生了变化。首先，<code>std::alloc</code> 更加稳定。其次，Future 任务系统切换到了显式<a target="_blank" rel="noopener" href="https://doc.rust-lang.org/std/task/struct.RawWakerVTable.html">虚表策略</a>。这两个关键点是最终摆脱每个任务双重分配低效问题的关键。</p>
+<p>现在，<code>Task</code> 结构表示为：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">Task</span>&lt;T&gt; &#123;</span><br><span class="line">    header: Header,</span><br><span class="line">    future: T,</span><br><span class="line">    trailer: Trailer,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>Header</code> 和 <code>Trailer</code> 都是执行任务所需的状态，但它们被分为“热”数据（Header）和“冷”数据（Trailer），即经常访问的数据和很少使用的数据。热数据位于结构体的头部，并尽可能保持较小。当 CPU 取消引用任务指针时，它将一次性加载缓存行大小的数据（<a target="_blank" rel="noopener" href="https://lwn.net/Articles/252125/">64 到 128 字节</a>之间）。我们希望这些数据尽可能地相关。</p>
+<h3 id="减少原子引用计数"><a href="#减少原子引用计数" class="headerlink" title="减少原子引用计数"></a>减少原子引用计数</h3><p>本文将讨论的最后一个优化是新调度器如何减少所需的原子引用计数。任务结构中存在许多未完成的引用：调度器和每个唤醒器都持有一个句柄。管理这些内存的常用方法是使用原子引用计数。此策略要求每次克隆引用时都执行一次原子操作，每次删除引用时也执行一次原子操作。当最终引用超出范围时，内存将被释放。</p>
+<p>在旧的 Tokio 调度程序中，每个唤醒程序都持有对任务句柄的计数引用，大致如下：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">Waker</span> &#123;</span><br><span class="line">    task: Arc&lt;Task&gt;,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">Waker</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">wake</span>(&amp;<span class="keyword">self</span>) &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">task</span> = <span class="keyword">self</span>.task.<span class="title function_ invoke__">clone</span>();</span><br><span class="line">        task.scheduler.<span class="title function_ invoke__">schedule</span>(task);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>当任务被唤醒时，引用会被克隆（原子递增）。然后，引用会被推送到运行队列。当处理器接收到任务并执行完毕后，它会丢弃引用，从而实现原子递减。这些原子操作会累加起来。</p>
+<p><code>std::future</code> 任务系统的设计者之前已经发现了这个问题。我们观察到，当调用 <code>Waker::wake</code> 时，原始的唤醒器引用通常不再需要。这样就可以在将任务推送到运行队列时重用原子引用计数。<code>std::future</code> 任务系统现在包含两个“唤醒”API：</p>
+<ul>
+<li><code>wake</code> 接受 <code>self</code> 参数</li>
+<li><code>wake_by_ref</code> 接受 <code>&amp;self</code> 参数</li>
+</ul>
+<p>此 API 设计促使调用者使用 <code>wake</code> 函数，从而避免了原子递增。具体实现如下：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">Waker</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">wake</span>(<span class="keyword">self</span>) &#123;</span><br><span class="line">        task.scheduler.<span class="title function_ invoke__">schedule</span>(<span class="keyword">self</span>.task);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">wake_by_ref</span>(&amp;<span class="keyword">self</span>) &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">task</span> = <span class="keyword">self</span>.task.<span class="title function_ invoke__">clone</span>();</span><br><span class="line">        task.scheduler.<span class="title function_ invoke__">schedule</span>(task);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>只有</strong>在能够获取唤醒器的所有权才能唤醒的情况下，这才能避免额外引用计数的开销。根据我的经验，使用 <code>&amp;self</code> 唤醒几乎总是更可取的。使用 <code>self</code> 唤醒可以避免唤醒器的重用（这在资源发送大量值（例如通道、套接字等）的情况下很有用），并且在需要 <code>self</code> 时更难以实现线程安全唤醒（这方面的细节将在另一篇文章中介绍）。</p>
+<p>新的调度程序通过避免 <code>wake_by_ref</code> 中的原子增量来解决整个“self 唤醒”问题，使其与 <code>wake(self)</code> 一样高效。这是通过让调度程序维护当前活动（尚未完成）的所有任务的列表来实现的。此列表表示将任务推送到运行队列所需的引用计数。</p>
+<p>这种优化的难点在于，如何确保调度程序不会从其列表中删除任何任务，直到能够保证该任务不会再次被推送到运行队列为止。关于如何管理这一点的具体细节超出了本文的讨论范围，但我建议您在源代码中进一步研究。</p>
+<h2 id="使用-Loom-实现无畏（不安全）并发"><a href="#使用-Loom-实现无畏（不安全）并发" class="headerlink" title="使用 Loom 实现无畏（不安全）并发"></a>使用 Loom 实现无畏（不安全）并发</h2><p>编写正确、并发、无锁的代码真的很难。慢而正确总比快而错误多要好，尤其是在这些错误与内存安全相关的情况下。最好的选择是快速而正确。新的调度程序进行了一些相当积极的优化，并避免了大多数标准类型，以便编写更专业的版本。新调度程序中存在相当多的不安全代码。</p>
+<p>测试并发代码的方法有几种。一种是让你的用户为你进行测试和调试（当然，这是一个很有吸引力的选择）。另一种是编写循环运行的单元测试，并希望它能捕获错误。甚至可以加入 <a target="_blank" rel="noopener" href="https://clang.llvm.org/docs/ThreadSanitizer.html">TSAN</a> 。当然，如果这样确实捕获了错误，除非再次循环运行测试，否则没有办法轻松地重现它。另外，你运行这个循环多长时间？十秒？十分钟？十天？这曾经是使用Rust测试并发代码的状态。</p>
+<p>我们认为现状并不可接受。我们希望在交付代码时充满信心（或者说，尽可能地充满信心），尤其是并发、无锁的代码。可靠性是 Tokio 用户所期望的。</p>
+<p>为了满足我们的需求，我们编写了一个新工具：<a target="_blank" rel="noopener" href="https://github.com/carllerche/loom/">Loom</a>。Loom 是一个用于并发代码的置换测试工具。测试的编写方式与常规工具相同，但使用 Loom 执行时，Loom 会多次运行测试，对测试在线程环境中可能遇到的所有可能的执行和行为进行置换。它还会验证内存访问是否正确、是否释放内存等等……</p>
+<p>例如，以下是针对新调度程序的 Loom 测试：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[test]</span></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">multi_spawn</span>() &#123;</span><br><span class="line">    loom::<span class="title function_ invoke__">model</span>(|| &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">pool</span> = ThreadPool::<span class="title function_ invoke__">new</span>();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">let</span> <span class="variable">c1</span> = Arc::<span class="title function_ invoke__">new</span>(AtomicUsize::<span class="title function_ invoke__">new</span>(<span class="number">0</span>));</span><br><span class="line"></span><br><span class="line">        <span class="keyword">let</span> (tx, rx) = oneshot::<span class="title function_ invoke__">channel</span>();</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">tx1</span> = Arc::<span class="title function_ invoke__">new</span>(Mutex::<span class="title function_ invoke__">new</span>(<span class="title function_ invoke__">Some</span>(tx)));</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Spawn a task</span></span><br><span class="line">        <span class="keyword">let</span> <span class="variable">c2</span> = c1.<span class="title function_ invoke__">clone</span>();</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">tx2</span> = tx1.<span class="title function_ invoke__">clone</span>();</span><br><span class="line">        pool.<span class="title function_ invoke__">spawn</span>(<span class="keyword">async</span> <span class="keyword">move</span> &#123;</span><br><span class="line">            <span class="title function_ invoke__">spawn</span>(<span class="keyword">async</span> <span class="keyword">move</span> &#123;</span><br><span class="line">                <span class="keyword">if</span> <span class="number">1</span> == c1.<span class="title function_ invoke__">fetch_add</span>(<span class="number">1</span>, Relaxed) &#123;</span><br><span class="line">                    tx1.<span class="title function_ invoke__">lock</span>().<span class="title function_ invoke__">unwrap</span>().<span class="title function_ invoke__">take</span>().<span class="title function_ invoke__">unwrap</span>().<span class="title function_ invoke__">send</span>(());</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;);</span><br><span class="line">        &#125;);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Spawn a second task</span></span><br><span class="line">        pool.<span class="title function_ invoke__">spawn</span>(<span class="keyword">async</span> <span class="keyword">move</span> &#123;</span><br><span class="line">            <span class="title function_ invoke__">spawn</span>(<span class="keyword">async</span> <span class="keyword">move</span> &#123;</span><br><span class="line">                <span class="keyword">if</span> <span class="number">1</span> == c2.<span class="title function_ invoke__">fetch_add</span>(<span class="number">1</span>, Relaxed) &#123;</span><br><span class="line">                    tx2.<span class="title function_ invoke__">lock</span>().<span class="title function_ invoke__">unwrap</span>().<span class="title function_ invoke__">take</span>().<span class="title function_ invoke__">unwrap</span>().<span class="title function_ invoke__">send</span>(());</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;);</span><br><span class="line">        &#125;);</span><br><span class="line"></span><br><span class="line">        rx.<span class="title function_ invoke__">recv</span>();</span><br><span class="line">    &#125;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这看起来很正常，但 <code>loom::model</code> 块中的这段代码会运行数千次（甚至数百万次），每次运行的行为都会略有不同。线程的确切顺序每次都会发生变化。此外，对于每个原子操作，<code>loom</code> 都会尝试 C++11 内存模型允许的所有不同行为。回想一下，我之前提到过，使用 <code>Acquire</code> 进行原子加载相当弱，可能会返回过时的值。而 <code>loom</code> 测试会尝试所有可以加载的值。</p>
+<p>在开发新的调度程序时，<code>loom</code> 是一个非常有用的工具。它捕获了其他单元测试、手动测试和压力测试遗漏的 10 多个错误。</p>
+<p>精明的读者可能会质疑 Loom 测试“所有可能的排列”的说法，而且这样做确实没错。简单的行为排列会导致阶乘级别的组合爆炸。任何非平凡的测试都无法完成。这个问题已经研究多年，并且存在许多用于管理组合爆炸的算法。Loom 的核心算法基于动态偏序约简。该算法能够修剪掉导致相同执行的排列。即使这样，状态空间也有可能变得过大，以至于无法在合理的时间内（几分钟）完成。Loom 还允许使用动态偏序约简的有界变体来限制搜索空间。</p>
+<p>总而言之，由于对 Loom 进行了广泛的测试，我对调度器的正确性更加有信心了。</p>
+<h2 id="结果"><a href="#结果" class="headerlink" title="结果"></a>结果</h2><p>当然是变得更快了。原文就不翻译了。</p>
+<p><a target="_blank" rel="noopener" href="https://github.com/carllerche">Carl Lerche</a></p>
+<div id="footnotes"><hr><div id="footnotelist"><ol style="list-style: none; padding-left: 0; margin-left: 40px"><li id="fn:1"><span style="display: inline-block; vertical-align: top; padding-right: 10px; margin-left: -40px">1.</span><span style="display: inline-block; vertical-align: top; margin-left: 10px;">从技术上讲，实现无锁的多消费者队列是可行的。然而，实际应用中，正确避免锁所需的开销比仅仅使用互斥锁要大得多。<a href="#fnref:1" rev="footnote"> ↩</a></span></li></ol></div></div>
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">首页</a></li>
+        
+          <li><a href="/about/">关于</a></li>
+        
+          <li><a href="/archives/">归档</a></li>
+        
+          <li><a href="/null">项目</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%B0%83%E5%BA%A6%E5%99%A8%E6%98%AF%E6%80%8E%E4%B9%88%E5%B7%A5%E4%BD%9C%E7%9A%84"><span class="toc-number">1.</span> <span class="toc-text">调度器是怎么工作的</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%80%E4%B8%AA%E9%98%9F%E5%88%97%EF%BC%8C%E5%A4%9A%E4%B8%AA%E5%A4%84%E7%90%86%E5%99%A8"><span class="toc-number">1.1.</span> <span class="toc-text">一个队列，多个处理器</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B9%B6%E5%8F%91%E5%92%8C%E6%9C%BA%E6%A2%B0%E5%85%B1%E9%B8%A3"><span class="toc-number">1.2.</span> <span class="toc-text">并发和机械共鸣</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%A4%9A%E4%B8%AA%E5%A4%84%E7%90%86%E5%99%A8%EF%BC%8C%E6%AF%8F%E4%B8%AA%E9%83%BD%E6%9C%89%E8%87%AA%E5%B7%B1%E7%9A%84%E8%BF%90%E8%A1%8C%E9%98%9F%E5%88%97"><span class="toc-number">1.3.</span> <span class="toc-text">多个处理器，每个都有自己的运行队列</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B7%A5%E4%BD%9C%E7%AA%83%E5%8F%96%E8%B0%83%E5%BA%A6%E5%99%A8"><span class="toc-number">1.4.</span> <span class="toc-text">工作窃取调度器</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Tokio-0-1-%E8%B0%83%E5%BA%A6%E5%99%A8"><span class="toc-number">2.</span> <span class="toc-text">Tokio 0.1 调度器</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Tokio-%E4%B8%8B%E4%B8%80%E4%BB%A3%E8%B0%83%E5%BA%A6%E5%99%A8"><span class="toc-number">3.</span> <span class="toc-text">Tokio 下一代调度器</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%96%B0%E7%9A%84%E4%BB%BB%E5%8A%A1%E7%B3%BB%E7%BB%9F"><span class="toc-number">3.1.</span> <span class="toc-text">新的任务系统</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9B%B4%E5%A5%BD%E7%9A%84%E8%BF%90%E8%A1%8C%E9%98%9F%E5%88%97"><span class="toc-number">3.2.</span> <span class="toc-text">更好的运行队列</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%92%88%E5%AF%B9%E6%B6%88%E6%81%AF%E4%BC%A0%E9%80%92%E6%A8%A1%E5%BC%8F%E8%BF%9B%E8%A1%8C%E4%BC%98%E5%8C%96"><span class="toc-number">3.3.</span> <span class="toc-text">针对消息传递模式进行优化</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9C%89%E8%8A%82%E5%88%B6%E7%9A%84%E7%AA%83%E5%8F%96"><span class="toc-number">3.4.</span> <span class="toc-text">有节制的窃取</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%87%8F%E5%B0%91%E8%B7%A8%E7%BA%BF%E7%A8%8B%E5%90%8C%E6%AD%A5"><span class="toc-number">3.5.</span> <span class="toc-text">减少跨线程同步</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%87%8F%E5%B0%91%E5%88%86%E9%85%8D"><span class="toc-number">3.6.</span> <span class="toc-text">减少分配</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%87%8F%E5%B0%91%E5%8E%9F%E5%AD%90%E5%BC%95%E7%94%A8%E8%AE%A1%E6%95%B0"><span class="toc-number">3.7.</span> <span class="toc-text">减少原子引用计数</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8-Loom-%E5%AE%9E%E7%8E%B0%E6%97%A0%E7%95%8F%EF%BC%88%E4%B8%8D%E5%AE%89%E5%85%A8%EF%BC%89%E5%B9%B6%E5%8F%91"><span class="toc-number">4.</span> <span class="toc-text">使用 Loom 实现无畏（不安全）并发</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BB%93%E6%9E%9C"><span class="toc-number">5.</span> <span class="toc-text">结果</span></a></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://zhaosima.github.io/2025/06/12/making-the-tokio-scheduler-10x-faster/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://zhaosima.github.io/2025/06/12/making-the-tokio-scheduler-10x-faster/&text=Making the Tokio scheduler 10x faster[翻译]"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://zhaosima.github.io/2025/06/12/making-the-tokio-scheduler-10x-faster/&title=Making the Tokio scheduler 10x faster[翻译]"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://zhaosima.github.io/2025/06/12/making-the-tokio-scheduler-10x-faster/&is_video=false&description=Making the Tokio scheduler 10x faster[翻译]"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=Making the Tokio scheduler 10x faster[翻译]&body=Check out this article: https://zhaosima.github.io/2025/06/12/making-the-tokio-scheduler-10x-faster/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://zhaosima.github.io/2025/06/12/making-the-tokio-scheduler-10x-faster/&title=Making the Tokio scheduler 10x faster[翻译]"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://zhaosima.github.io/2025/06/12/making-the-tokio-scheduler-10x-faster/&title=Making the Tokio scheduler 10x faster[翻译]"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://zhaosima.github.io/2025/06/12/making-the-tokio-scheduler-10x-faster/&title=Making the Tokio scheduler 10x faster[翻译]"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://zhaosima.github.io/2025/06/12/making-the-tokio-scheduler-10x-faster/&title=Making the Tokio scheduler 10x faster[翻译]"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://zhaosima.github.io/2025/06/12/making-the-tokio-scheduler-10x-faster/&name=Making the Tokio scheduler 10x faster[翻译]&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://zhaosima.github.io/2025/06/12/making-the-tokio-scheduler-10x-faster/&t=Making the Tokio scheduler 10x faster[翻译]"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> 菜单</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> 目录</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> 分享</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> 返回顶部</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2016-2025
+    WindFlow
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/about/">关于</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a href="/null">项目</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"复制到粘贴板！\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "复制成功！");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>
