@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="在 上一章 main 宏展开还有最后一个部分没有讲：async main 是怎么执行的。 1234567...        return #rt            .enable_all()            .build()            .expect(&quot;Failed building the Runtime&quot;)            .block_on(">
+<meta property="og:type" content="article">
+<meta property="og:title" content="tokio runtime -- async main">
+<meta property="og:url" content="https://zhaosima.github.io/2025/06/19/tokio-rt-main2/">
+<meta property="og:site_name" content="WindFlow">
+<meta property="og:description" content="在 上一章 main 宏展开还有最后一个部分没有讲：async main 是怎么执行的。 1234567...        return #rt            .enable_all()            .build()            .expect(&quot;Failed building the Runtime&quot;)            .block_on(">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-06-19T01:50:32.000Z">
+<meta property="article:modified_time" content="2025-06-19T02:06:36.952Z">
+<meta property="article:author" content="WindFlow">
+<meta name="twitter:card" content="summary">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>tokio runtime -- async main</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="顶部" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/about/">关于</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a href="/null">项目</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" aria-label="上一篇" href="/2025/06/19/tokio-rt-task/"><i class="fa-solid fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" aria-label="下一篇" href="/2025/06/17/tokio-rt-main/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="返回顶部" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="分享文章" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">上一篇</span>
+      <span id="i-next" class="info" style="display:none;">下一篇</span>
+      <span id="i-top" class="info" style="display:none;">返回顶部</span>
+      <span id="i-share" class="info" style="display:none;">分享文章</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://zhaosima.github.io/2025/06/19/tokio-rt-main2/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://zhaosima.github.io/2025/06/19/tokio-rt-main2/&text=tokio runtime -- async main"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://zhaosima.github.io/2025/06/19/tokio-rt-main2/&title=tokio runtime -- async main"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://zhaosima.github.io/2025/06/19/tokio-rt-main2/&is_video=false&description=tokio runtime -- async main"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=tokio runtime -- async main&body=Check out this article: https://zhaosima.github.io/2025/06/19/tokio-rt-main2/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://zhaosima.github.io/2025/06/19/tokio-rt-main2/&title=tokio runtime -- async main"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://zhaosima.github.io/2025/06/19/tokio-rt-main2/&title=tokio runtime -- async main"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://zhaosima.github.io/2025/06/19/tokio-rt-main2/&title=tokio runtime -- async main"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://zhaosima.github.io/2025/06/19/tokio-rt-main2/&title=tokio runtime -- async main"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://zhaosima.github.io/2025/06/19/tokio-rt-main2/&name=tokio runtime -- async main&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://zhaosima.github.io/2025/06/19/tokio-rt-main2/&t=tokio runtime -- async main"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#block-on"><span class="toc-number">1.</span> <span class="toc-text">block on</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%A0%B9%E4%BB%BB%E5%8A%A1"><span class="toc-number">2.</span> <span class="toc-text">根任务</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Future"><span class="toc-number">3.</span> <span class="toc-text">Future</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#tokio-%E4%BB%BB%E5%8A%A1"><span class="toc-number">4.</span> <span class="toc-text">tokio 任务</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%94%9F%E6%88%90%E7%8A%B6%E6%80%81%E6%9C%BA"><span class="toc-number">5.</span> <span class="toc-text">生成状态机</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">6.</span> <span class="toc-text">总结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%8B%E4%B8%80%E6%AD%A5"><span class="toc-number">7.</span> <span class="toc-text">下一步</span></a></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        tokio runtime -- async main
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">WindFlow</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2025-06-19T01:50:32.000Z" class="dt-published" itemprop="datePublished">2025-06-19</time>
+        
+      
+    </div>
+
+
+      
+
+      
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/hint.css/2.4.1/hint.min.css"><p>在 <a href="/2025/06/17/tokio-rt-main/" title="tokio runtime -- main macro">上一章</a> main 宏展开还有最后一个部分没有讲：<code>async main</code> 是怎么执行的。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">        <span class="keyword">return</span> #rt</span><br><span class="line">            .<span class="title function_ invoke__">enable_all</span>()</span><br><span class="line">            .<span class="title function_ invoke__">build</span>()</span><br><span class="line">            .<span class="title function_ invoke__">expect</span>(<span class="string">&quot;Failed building the Runtime&quot;</span>)</span><br><span class="line">            .<span class="title function_ invoke__">block_on</span>(#body_ident);</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<h2 id="block-on"><a href="#block-on" class="headerlink" title="block on"></a>block on</h2><figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// tokio/src/runtime/runtime.rs</span></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">Runtime</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">block_on</span>&lt;F: Future&gt;(&amp;<span class="keyword">self</span>, future: F) <span class="punctuation">-&gt;</span> F::Output &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">fut_size</span> = mem::size_of::&lt;F&gt;();</span><br><span class="line">        <span class="keyword">if</span> fut_size &gt; BOX_FUTURE_THRESHOLD &#123;</span><br><span class="line">            <span class="keyword">self</span>.<span class="title function_ invoke__">block_on_inner</span>(<span class="type">Box</span>::<span class="title function_ invoke__">pin</span>(future), SpawnMeta::<span class="title function_ invoke__">new_unnamed</span>(fut_size))</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">self</span>.<span class="title function_ invoke__">block_on_inner</span>(future, SpawnMeta::<span class="title function_ invoke__">new_unnamed</span>(fut_size))</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">block_on_inner</span>&lt;F: Future&gt;(&amp;<span class="keyword">self</span>, future: F, _meta: SpawnMeta&lt;<span class="symbol">&#x27;_</span>&gt;) <span class="punctuation">-&gt;</span> F::Output &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">_enter</span> = <span class="keyword">self</span>.<span class="title function_ invoke__">enter</span>();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">match</span> &amp;<span class="keyword">self</span>.scheduler &#123;</span><br><span class="line">            Scheduler::<span class="title function_ invoke__">CurrentThread</span>(exec) =&gt; exec.<span class="title function_ invoke__">block_on</span>(&amp;<span class="keyword">self</span>.handle.inner, future),</span><br><span class="line">            <span class="meta">#[cfg(feature = <span class="string">&quot;rt-multi-thread&quot;</span>)]</span></span><br><span class="line">            Scheduler::<span class="title function_ invoke__">MultiThread</span>(exec) =&gt; exec.<span class="title function_ invoke__">block_on</span>(&amp;<span class="keyword">self</span>.handle.inner, future),</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// tokio/src/runtime/scheduler/multi_thread/mod.rs</span></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">MultiThread</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">block_on</span>&lt;F&gt;(&amp;<span class="keyword">self</span>, handle: &amp;scheduler::Handle, future: F) <span class="punctuation">-&gt;</span> F::Output</span><br><span class="line">    &#123;</span><br><span class="line">        crate::runtime::context::<span class="title function_ invoke__">enter_runtime</span>(handle, <span class="literal">true</span>, |blocking| &#123;</span><br><span class="line">            blocking.<span class="title function_ invoke__">block_on</span>(future).<span class="title function_ invoke__">expect</span>(<span class="string">&quot;failed to park thread&quot;</span>)</span><br><span class="line">        &#125;)</span><br><span class="line">    &#125;    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// tokio/src/runtime/context/blocking.rs</span></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">BlockingRegionGuard</span> &#123;</span><br><span class="line">    <span class="comment">/// Blocks the thread on the specified future, returning the value with</span></span><br><span class="line">    <span class="comment">/// which that future completes.</span></span><br><span class="line">    <span class="title function_ invoke__">pub</span>(<span class="keyword">crate</span>) <span class="keyword">fn</span> <span class="title function_">block_on</span>&lt;F&gt;(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>, f: F) <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;F::Output, AccessError&gt;</span><br><span class="line">    <span class="keyword">where</span></span><br><span class="line">        F: std::future::Future,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">use</span> crate::runtime::park::CachedParkThread;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">park</span> = CachedParkThread::<span class="title function_ invoke__">new</span>();</span><br><span class="line">        park.<span class="title function_ invoke__">block_on</span>(f)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// tokio/src/runtime/park.rs</span></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">CachedParkThread</span> &#123;</span><br><span class="line">    <span class="title function_ invoke__">pub</span>(<span class="keyword">crate</span>) <span class="keyword">fn</span> <span class="title function_">block_on</span>&lt;F: Future&gt;(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>, f: F) <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;F::Output, AccessError&gt; &#123;</span><br><span class="line">        <span class="keyword">use</span> std::task::Context;</span><br><span class="line">        <span class="keyword">use</span> std::task::Poll::Ready;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">let</span> <span class="variable">waker</span> = <span class="keyword">self</span>.<span class="title function_ invoke__">waker</span>()?;</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">cx</span> = Context::<span class="title function_ invoke__">from_waker</span>(&amp;waker);</span><br><span class="line"></span><br><span class="line">        pin!(f);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">loop</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Ready</span>(v) = crate::task::coop::<span class="title function_ invoke__">budget</span>(|| f.<span class="title function_ invoke__">as_mut</span>().<span class="title function_ invoke__">poll</span>(&amp;<span class="keyword">mut</span> cx)) &#123;</span><br><span class="line">                <span class="keyword">return</span> <span class="title function_ invoke__">Ok</span>(v);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">self</span>.<span class="title function_ invoke__">park</span>();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="根任务"><a href="#根任务" class="headerlink" title="根任务"></a>根任务</h2><p>考虑以下代码</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[tokio::main]</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">    tokio::<span class="title function_ invoke__">spawn</span>(<span class="keyword">async</span> &#123;</span><br><span class="line">        <span class="built_in">println!</span>(<span class="string">&quot;Hello&quot;</span>);</span><br><span class="line">    &#125;).<span class="keyword">await</span>; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>async fn main</code> 会被编译器编译成一个实现了 <code>Future trait</code> 的状态机。最终在 <code>CachedParkThread::block_on</code> 内部调用 poll()。</p>
+<p><code>CachedParkThread::block_on</code> 做了两件重要的事：</p>
+<ol>
+<li>创建了 <code>Waker Context cx</code></li>
+<li>调用 <code>future.poll(cx)</code></li>
+<li>如果 <code>poll</code> 不是 <code>Ready</code>，那么挂起直到唤醒。</li>
+</ol>
+<p>注意 <code>async fn main</code>没有 await。</p>
+<h2 id="Future"><a href="#Future" class="headerlink" title="Future"></a>Future</h2><figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">trait</span> <span class="title class_">Future</span> &#123;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">Output</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">poll</span>(<span class="keyword">self</span>: Pin&lt;&amp;<span class="keyword">mut</span> <span class="keyword">Self</span>&gt;, cx: &amp;<span class="keyword">mut</span> Context&lt;<span class="symbol">&#x27;_</span>&gt;) <span class="punctuation">-&gt;</span> Poll&lt;<span class="keyword">Self</span>::Output&gt;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Future 是异步编程的关键概念。</p>
+<h2 id="tokio-任务"><a href="#tokio-任务" class="headerlink" title="tokio 任务"></a>tokio 任务</h2><p><code>tokio::spawn</code> 的细节之前的<a href="/2025/06/17/tokio-rt-spawn/" title="tokio runtime -- spawn">文章</a>已经讲解过了，它返回了 <code>JoinHandle</code>.  <code>JoinHandle</code> 也实现了 Future。<br><code>.await</code> 就相当于调用了 poll()，传给它的 context 是什么呢？这也要靠编译器来填充。</p>
+<p><em>当然根据之前的分析，即使不调用 await，tokio 任务也会执行，只是不会在当前线程等待结束。</em></p>
+<h2 id="生成状态机"><a href="#生成状态机" class="headerlink" title="生成状态机"></a>生成状态机</h2><p>编译器生成的状态机大概如下</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">Future</span> <span class="keyword">for</span> <span class="title class_">MainFuture</span> &#123;</span><br><span class="line">    <span class="comment">// 这个 async 块没有返回值，所以 Output 是单元类型 ()</span></span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">Output</span> = ();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// poll 方法接收一个 Pin&lt;&amp;mut Self&gt; 和一个包含 Waker 的 Context</span></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">poll</span>(<span class="keyword">mut</span> <span class="keyword">self</span>: Pin&lt;&amp;<span class="keyword">mut</span> <span class="keyword">Self</span>&gt;, cx: &amp;<span class="keyword">mut</span> Context&lt;<span class="symbol">&#x27;_</span>&gt;) <span class="punctuation">-&gt;</span> Poll&lt;<span class="keyword">Self</span>::Output&gt; &#123;</span><br><span class="line">        <span class="comment">// 使用 loop 是一个常见模式，可以让状态机在一次 poll 中尽可能多地向前推进</span></span><br><span class="line">        <span class="keyword">loop</span> &#123;</span><br><span class="line">            <span class="keyword">match</span> <span class="keyword">self</span>.state &#123;</span><br><span class="line">                <span class="comment">// =============== 状态 0: Start ===============</span></span><br><span class="line">                State::Start =&gt; &#123;</span><br><span class="line">                    <span class="built_in">println!</span>(<span class="string">&quot;状态机: 进入 Start 状态&quot;</span>);</span><br><span class="line"></span><br><span class="line">                    <span class="comment">// 执行 .await 之前的所有代码</span></span><br><span class="line">                    <span class="keyword">let</span> <span class="variable">handle</span> = tokio::<span class="title function_ invoke__">spawn</span>(<span class="keyword">async</span> &#123;</span><br><span class="line">                        <span class="built_in">println!</span>(<span class="string">&quot;Hello thread id: &#123;:?&#125;&quot;</span>, std::thread::<span class="title function_ invoke__">current</span>().<span class="title function_ invoke__">id</span>());</span><br><span class="line">                    &#125;);</span><br><span class="line"></span><br><span class="line">                    <span class="comment">// 将 JoinHandle 存入状态机，以便下一个状态使用</span></span><br><span class="line">                    <span class="keyword">self</span>.join_handle = <span class="title function_ invoke__">Some</span>(handle);</span><br><span class="line"></span><br><span class="line">                    <span class="comment">// **重要**: 转换到下一个状态</span></span><br><span class="line">                    <span class="keyword">self</span>.state = State::WaitingOnJoinHandle;</span><br><span class="line">                    </span><br><span class="line">                    <span class="comment">// 状态转换后，我们不立即返回，而是通过 loop 继续执行下一个状态的逻辑</span></span><br><span class="line">                    <span class="comment">// 这被称为“状态转移优化”</span></span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">                <span class="comment">// =============== 状态 1: WaitingOnJoinHandle ===============</span></span><br><span class="line">                State::WaitingOnJoinHandle =&gt; &#123;</span><br><span class="line">                    <span class="built_in">println!</span>(<span class="string">&quot;状态机: 进入 WaitingOnJoinHandle 状态，开始 poll JoinHandle&quot;</span>);</span><br><span class="line"></span><br><span class="line">                    <span class="comment">// 从 self 中取出 JoinHandle 的可变引用</span></span><br><span class="line">                    <span class="comment">// unwrap 是安全的，因为我们确信在 State 1 时它必定是 Some</span></span><br><span class="line">                    <span class="keyword">let</span> <span class="variable">handle_future</span> = <span class="keyword">self</span>.join_handle.<span class="title function_ invoke__">as_mut</span>().<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line"></span><br><span class="line">                    <span class="comment">// **核心**: poll 子 Future (JoinHandle)</span></span><br><span class="line">                    <span class="comment">// 注意这里我们把从外部接收到的 Context (cx) 传递了进去</span></span><br><span class="line">                    <span class="comment">// 这样 JoinHandle 在需要时就能唤醒我们的 MainFuture</span></span><br><span class="line">                    <span class="keyword">match</span> Pin::<span class="title function_ invoke__">new</span>(handle_future).<span class="title function_ invoke__">poll</span>(cx) &#123;</span><br><span class="line">                        <span class="comment">// 子 Future 完成了</span></span><br><span class="line">                        Poll::<span class="title function_ invoke__">Ready</span>(result) =&gt; &#123;</span><br><span class="line">                            <span class="comment">// 在这里可以处理 result (虽然我们这里忽略了)</span></span><br><span class="line">                            <span class="comment">// let _ = result;</span></span><br><span class="line">                            </span><br><span class="line">                            <span class="built_in">println!</span>(<span class="string">&quot;状态机: JoinHandle 完成，准备结束&quot;</span>);</span><br><span class="line"></span><br><span class="line">                            <span class="comment">// **重要**: 转换到最终状态</span></span><br><span class="line">                            <span class="keyword">self</span>.state = State::Done;</span><br><span class="line"></span><br><span class="line">                            <span class="comment">// 整个 MainFuture 完成，返回 Ready</span></span><br><span class="line">                            <span class="keyword">return</span> Poll::<span class="title function_ invoke__">Ready</span>(());</span><br><span class="line">                        &#125;</span><br><span class="line"></span><br><span class="line">                        <span class="comment">// 子 Future 还没准备好</span></span><br><span class="line">                        Poll::Pending =&gt; &#123;</span><br><span class="line">                            <span class="built_in">println!</span>(<span class="string">&quot;状态机: JoinHandle 返回 Pending，我们也返回 Pending&quot;</span>);</span><br><span class="line"></span><br><span class="line">                            <span class="comment">// 我们必须立刻返回 Pending，把控制权交还给运行时</span></span><br><span class="line">                            <span class="comment">// Waker 已经被 JoinHandle 在其内部的 poll 方法中注册好了</span></span><br><span class="line">                            <span class="keyword">return</span> Poll::Pending;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">                <span class="comment">// =============== 状态 2: Done ===============</span></span><br><span class="line">                State::Done =&gt; &#123;</span><br><span class="line">                    <span class="comment">// 一个已经完成的 Future 不应该被再次 poll</span></span><br><span class="line">                    <span class="comment">// 在实际中这会触发一个 panic</span></span><br><span class="line">                    <span class="built_in">panic!</span>(<span class="string">&quot;Future polled after completion&quot;</span>);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
+<li>async main 代码块会被编译器编译成 <code>Future StateMachine A</code>。在主线程内主动 Poll Future。</li>
+<li>tokio::spawn 内的 async 代码块会被编译器编译成 <code>Future StateMachine B</code>.</li>
+<li>tokio::spawn 的返回值是一个 Future C，不需要编译来生成。</li>
+<li>如果 <code>Future C</code> 被 await 了, 那么 <code>Future StateMachine A</code> 的代码会扩充分支来 poll 它。</li>
+</ul>
+<h2 id="下一步"><a href="#下一步" class="headerlink" title="下一步"></a>下一步</h2><p>那么问题来了， <code>Future StateMachine B</code> 的 <code>poll</code> 谁来执行呢？ 这也是<a href="/2025/06/17/tokio-rt-main/" title="tokio runtime -- main macro">上一章</a>遗留的问题，<code>task.run</code> 具体做了什么，<a href="/2025/06/19/tokio-rt-task/" title="tokio runtime -- task">下一章</a>再来解答。</p>
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">首页</a></li>
+        
+          <li><a href="/about/">关于</a></li>
+        
+          <li><a href="/archives/">归档</a></li>
+        
+          <li><a href="/null">项目</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#block-on"><span class="toc-number">1.</span> <span class="toc-text">block on</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%A0%B9%E4%BB%BB%E5%8A%A1"><span class="toc-number">2.</span> <span class="toc-text">根任务</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Future"><span class="toc-number">3.</span> <span class="toc-text">Future</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#tokio-%E4%BB%BB%E5%8A%A1"><span class="toc-number">4.</span> <span class="toc-text">tokio 任务</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%94%9F%E6%88%90%E7%8A%B6%E6%80%81%E6%9C%BA"><span class="toc-number">5.</span> <span class="toc-text">生成状态机</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">6.</span> <span class="toc-text">总结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%8B%E4%B8%80%E6%AD%A5"><span class="toc-number">7.</span> <span class="toc-text">下一步</span></a></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://zhaosima.github.io/2025/06/19/tokio-rt-main2/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://zhaosima.github.io/2025/06/19/tokio-rt-main2/&text=tokio runtime -- async main"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://zhaosima.github.io/2025/06/19/tokio-rt-main2/&title=tokio runtime -- async main"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://zhaosima.github.io/2025/06/19/tokio-rt-main2/&is_video=false&description=tokio runtime -- async main"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=tokio runtime -- async main&body=Check out this article: https://zhaosima.github.io/2025/06/19/tokio-rt-main2/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://zhaosima.github.io/2025/06/19/tokio-rt-main2/&title=tokio runtime -- async main"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://zhaosima.github.io/2025/06/19/tokio-rt-main2/&title=tokio runtime -- async main"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://zhaosima.github.io/2025/06/19/tokio-rt-main2/&title=tokio runtime -- async main"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://zhaosima.github.io/2025/06/19/tokio-rt-main2/&title=tokio runtime -- async main"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://zhaosima.github.io/2025/06/19/tokio-rt-main2/&name=tokio runtime -- async main&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://zhaosima.github.io/2025/06/19/tokio-rt-main2/&t=tokio runtime -- async main"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> 菜单</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> 目录</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> 分享</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> 返回顶部</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2016-2025
+    WindFlow
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/about/">关于</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a href="/null">项目</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"复制到粘贴板！\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "复制成功！");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>
