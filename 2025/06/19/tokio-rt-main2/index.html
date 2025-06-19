@@ -14,7 +14,7 @@
 <meta property="og:description" content="在 上一章 main 宏展开还有最后一个部分没有讲：async main 是怎么执行的。 1234567...        return #rt            .enable_all()            .build()            .expect(&quot;Failed building the Runtime&quot;)            .block_on(">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2025-06-19T01:50:32.000Z">
-<meta property="article:modified_time" content="2025-06-19T02:16:05.226Z">
+<meta property="article:modified_time" content="2025-06-19T02:16:39.387Z">
 <meta property="article:author" content="WindFlow">
 <meta name="twitter:card" content="summary">
     
@@ -188,7 +188,7 @@
 <li>tokio::spawn 的返回值是一个 <code>Future C</code>，不需要编译来生成。</li>
 <li>如果 <code>Future C</code> 被 await 了, 那么 <code>Future StateMachine A</code> 的代码会扩充分支来 poll 它。</li>
 </ul>
-<h2 id="下一步"><a href="#下一步" class="headerlink" title="下一步"></a>下一步</h2><p>那么问题来了， <code>Future StateMachine B</code> 的 <code>poll</code> 谁来执行呢？ 这也是<a href="/2025/06/17/tokio-rt-main/" title="tokio runtime -- main macro">上一章</a>遗留的问题，<code>task.run</code> 具体做了什么，<a href="/2025/06/19/tokio-rt-task/" title="tokio runtime -- task">下一章</a>再来解答。</p>
+<h2 id="下一步"><a href="#下一步" class="headerlink" title="下一步"></a>下一步</h2><p>那么问题来了， <code>Future StateMachine B</code> 的 poll() 谁来执行呢？ 这也是<a href="/2025/06/17/tokio-rt-main/" title="tokio runtime -- main macro">上一章</a>遗留的问题，<code>task.run</code> 具体做了什么，<a href="/2025/06/19/tokio-rt-task/" title="tokio runtime -- task">下一章</a>再来解答。</p>
 
   </div>
 </article>
