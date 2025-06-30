@@ -55,7 +55,21 @@
     
 	<!-- mathjax -->
 	
-<meta name="generator" content="Hexo 7.3.0"></head>
+		<script type="text/x-mathjax-config">
+		  MathJax.Hub.Config({
+			tex2jax: {
+			  skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+			  inlineMath: [['$','$']]
+			}
+		  });
+		</script>
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML' async></script>
+	
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
+<!-- hexo injector head_end end --><meta name="generator" content="Hexo 7.3.0"></head>
 
 <body class="max-width mx-auto px3 ltr">
     
@@ -154,85 +168,40 @@
   
 
   <div class="content e-content" itemprop="articleBody">
-    <h2 id="the-power-usage-of-Aggregate"><a href="#the-power-usage-of-Aggregate" class="headerlink" title="the power usage of Aggregate"></a>the power usage of Aggregate</h2><p>因为阅读了某位作者文章的缘故，我也去翻了下.net Mvc启动管道的源码。在其中发现了这么一段代码：</p>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/hint.css/2.4.1/hint.min.css"><h2 id="the-power-usage-of-Aggregate"><a href="#the-power-usage-of-Aggregate" class="headerlink" title="the power usage of Aggregate"></a>the power usage of Aggregate</h2><p>因为阅读了某位作者文章的缘故，我也去翻了下.net Mvc启动管道的源码。在其中发现了这么一段代码：</p>
 <figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">endContinuation = filters.Reverse&lt;IActionFilter&gt;().Aggregate&lt;IActionFilter, Func&lt;Func&lt;ActionExecutedContext&gt;&gt;&gt;((Func&lt;Func&lt;ActionExecutedContext&gt;&gt;) (() =&gt;</span><br><span class="line">   &#123;</span><br><span class="line">     innerAsyncResult = <span class="keyword">this</span>.BeginInvokeActionMethod(controllerContext, actionDescriptor, parameters, asyncCallback, asyncState);</span><br><span class="line">     <span class="keyword">return</span> (Func&lt;ActionExecutedContext&gt;) (() =&gt; <span class="keyword">new</span> ActionExecutedContext(controllerContext, actionDescriptor, <span class="literal">false</span>, (Exception) <span class="literal">null</span>)</span><br><span class="line">     &#123;</span><br><span class="line">       Result = <span class="keyword">this</span>.EndInvokeActionMethod(innerAsyncResult)</span><br><span class="line">     &#125;);</span><br><span class="line">   &#125;), (Func&lt;Func&lt;Func&lt;ActionExecutedContext&gt;&gt;, IActionFilter, Func&lt;Func&lt;ActionExecutedContext&gt;&gt;&gt;) ((next, filter) =&gt; (Func&lt;Func&lt;ActionExecutedContext&gt;&gt;) (() =&gt; AsyncControllerActionInvoker.InvokeActionMethodFilterAsynchronously(filter, preContext, next))))();</span><br></pre></td></tr></table></figure>
-
 <p>一看之下，几乎要被它长长的气势所吓倒。其本质是Linq聚合函数，只不过一串Func实在太过耀眼。为了深入理解，我写了段相似代码来模拟运行。</p>
 <figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">TestFilters</span>()</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">var</span> filters = <span class="keyword">new</span> List&lt;IMyFilter&gt; &#123;<span class="keyword">new</span> MyFilter.FilterA(), <span class="keyword">new</span> MyFilter.FilterB(), <span class="keyword">new</span> MyFilter.FilterC()&#125;;</span><br><span class="line">    <span class="keyword">var</span> invoker = <span class="keyword">new</span> Invoker();</span><br><span class="line">    <span class="keyword">var</span> context = <span class="keyword">new</span> ExecutingContext();</span><br><span class="line">    <span class="keyword">var</span> endContinuation = filters.Aggregate&lt;IMyFilter, Func&lt;Func&lt;ExecutedContext&gt;&gt;&gt;((Func&lt;Func&lt;ExecutedContext&gt;&gt;)(() =&gt;</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">var</span> innerResult = invoker.BeginInvoke(context);</span><br><span class="line">        <span class="keyword">return</span> (Func&lt;ExecutedContext&gt;)(() =&gt; <span class="keyword">new</span> ExecutedContext()</span><br><span class="line">        &#123;</span><br><span class="line">            Result = invoker.EndInvoke(innerResult)</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;), (Func&lt;Func&lt;Func&lt;ExecutedContext&gt;&gt;, IMyFilter, Func&lt;Func&lt;ExecutedContext&gt;&gt;&gt;)((next, filter) =&gt; </span><br><span class="line">    (Func&lt;Func&lt;ExecutedContext&gt;&gt;)(() =&gt; InvokeAction(filter, context, next))))();</span><br><span class="line"></span><br><span class="line">    endContinuation();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">internal</span> <span class="keyword">static</span> Func&lt;ExecutedContext&gt; <span class="title">InvokeAction</span>(<span class="params">IMyFilter filter, ExecutingContext preContext, Func&lt;Func&lt;ExecutedContext&gt;&gt; nextInChain</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    filter.OnExecuting(preContext);</span><br><span class="line">    <span class="keyword">if</span> (preContext.Result != <span class="literal">null</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        ExecutedContext shortCircuitedPostContext = <span class="keyword">new</span> ExecutedContext()</span><br><span class="line">        &#123;</span><br><span class="line">            Result = preContext.Result</span><br><span class="line">        &#125;;</span><br><span class="line">        <span class="keyword">return</span> () =&gt; shortCircuitedPostContext;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">try</span></span><br><span class="line">    &#123;</span><br><span class="line">        Func&lt;ExecutedContext&gt; continuation = nextInChain();</span><br><span class="line">        <span class="keyword">return</span> (Func&lt;ExecutedContext&gt;)(() =&gt;</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="built_in">bool</span> flag = <span class="literal">true</span>;</span><br><span class="line">            ExecutedContext filterContext;</span><br><span class="line">            <span class="keyword">try</span></span><br><span class="line">            &#123;</span><br><span class="line">                filterContext = continuation();</span><br><span class="line">                flag = <span class="literal">false</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">catch</span> (Exception ex)</span><br><span class="line">            &#123;</span><br><span class="line">                filterContext = <span class="keyword">new</span> ExecutedContext();</span><br><span class="line">                filter.OnExecuted(filterContext);</span><br><span class="line">                <span class="keyword">if</span> (!filterContext.ExceptionHandled)</span><br><span class="line">                    <span class="keyword">throw</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (!flag)</span><br><span class="line">                filter.OnExecuted(filterContext);</span><br><span class="line">            <span class="keyword">return</span> filterContext;</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">catch</span> (Exception ex)</span><br><span class="line">    &#123;</span><br><span class="line">        ExecutedContext postContext = <span class="keyword">new</span> ExecutedContext();</span><br><span class="line">        filter.OnExecuted(postContext);</span><br><span class="line">        <span class="keyword">if</span> (postContext.ExceptionHandled)</span><br><span class="line">            <span class="keyword">return</span> (Func&lt;ExecutedContext&gt;)(() =&gt; postContext);</span><br><span class="line">        <span class="keyword">throw</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
 <p>这里的流程如下：</p>
 <blockquote>
 <p>集合：FilterA, FilterB, FilterC</p>
-</blockquote>
-<blockquote>
 <p>seed：seedFunc</p>
-</blockquote>
-<blockquote>
-<p>第一趟：FilterA, seedFunc &#x3D;&gt; nextFunc1</p>
-</blockquote>
-<blockquote>
-<p>第二趟：FilterB, nextFunc1 &#x3D;&gt; nextFunc2</p>
-</blockquote>
-<blockquote>
-<p>第三趟：FilterC, nextFunc2 &#x3D;&gt; nextFunc3</p>
+<p>第一趟：FilterA, seedFunc =&gt; nextFunc1</p>
+<p>第二趟：FilterB, nextFunc1 =&gt; nextFunc2</p>
+<p>第三趟：FilterC, nextFunc2 =&gt; nextFunc3</p>
 </blockquote>
 <p>循环结束，调用nextFunc3: </p>
 <blockquote>
 <p>FilterC.OnExecuting, call nextFunc2</p>
-</blockquote>
-<blockquote>
 <blockquote>
 <p>FilterB.OnExecuting, call nextFunc1</p>
-</blockquote>
-</blockquote>
-<blockquote>
-<blockquote>
 <blockquote>
 <p>FilterA.OnExecuting, call seedFunc</p>
-</blockquote>
-</blockquote>
-</blockquote>
-<blockquote>
-<blockquote>
-<blockquote>
 <blockquote>
 <p>invoker.BeginInvoke</p>
-</blockquote>
-</blockquote>
-</blockquote>
-</blockquote>
-<blockquote>
-<blockquote>
-<blockquote>
-<blockquote>
 <p>invoker.EndInvoke</p>
 </blockquote>
-</blockquote>
-</blockquote>
-</blockquote>
-<blockquote>
-<blockquote>
-<blockquote>
 <p>FilterA.OnExecuted</p>
 </blockquote>
-</blockquote>
-</blockquote>
-<blockquote>
-<blockquote>
 <p>FilterB.OnExecuting</p>
 </blockquote>
-</blockquote>
-<blockquote>
 <p>FilterC.OnExecuting</p>
 </blockquote>
 <p>从此，我们也可以窥见Mvc Action Filter的原理是什么。</p>
 <p>一般来说，我们对于Linq Aggregate 的运用都来自于很简单的例子，或者很常见的场景，比如字符串连接：</p>
 <figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">new</span> List&lt;String&gt;() &#123;<span class="string">&quot;aa&quot;</span>, <span class="string">&quot;bb&quot;</span>&#125;.Aggregate((t, e) =&gt; t + <span class="string">&quot;-&quot;</span> + e)</span><br></pre></td></tr></table></figure>
-
 <p>这么写谁都会，但涉及到复杂一点的东西，就不会想到用聚合来做。说到底，还是对某种概念的理解流于表面。例如，我们可以这样实现一个累加生成器：</p>
 <figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="title">Func</span>&lt;<span class="title">int</span>, <span class="title">int</span>&gt; <span class="title">Sumer</span>(<span class="params">IEnumerable&lt;<span class="built_in">int</span>&gt; seeds</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">return</span> seeds.Aggregate&lt;<span class="built_in">int</span>, Func&lt;<span class="built_in">int</span>, <span class="built_in">int</span>&gt;&gt;(x =&gt; x, (acc, number) =&gt; y =&gt; acc(number) + y);</span><br><span class="line">&#125;</span><br><span class="line">Sumer(<span class="keyword">new</span> [] &#123;<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>&#125;)(<span class="number">4</span>); <span class="comment">//10</span></span><br></pre></td></tr></table></figure>
-
-
 
   </div>
 </article>

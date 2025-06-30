@@ -55,7 +55,21 @@
     
 	<!-- mathjax -->
 	
-<meta name="generator" content="Hexo 7.3.0"></head>
+		<script type="text/x-mathjax-config">
+		  MathJax.Hub.Config({
+			tex2jax: {
+			  skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+			  inlineMath: [['$','$']]
+			}
+		  });
+		</script>
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML' async></script>
+	
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
+<!-- hexo injector head_end end --><meta name="generator" content="Hexo 7.3.0"></head>
 
 <body class="max-width mx-auto px3 ltr">
     
@@ -154,7 +168,7 @@
   
 
   <div class="content e-content" itemprop="articleBody">
-    <h2 id="零知识证明"><a href="#零知识证明" class="headerlink" title="零知识证明"></a>零知识证明</h2><p>读一读这篇论文<a target="_blank" rel="noopener" href="http://www.doc88.com/p-1327381288501.html">零知识证明及其应用</a>。虽然这篇论文不过是一些资料的复制粘贴，但好在是中文的。</p>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/hint.css/2.4.1/hint.min.css"><h2 id="零知识证明"><a href="#零知识证明" class="headerlink" title="零知识证明"></a>零知识证明</h2><p>读一读这篇论文<a target="_blank" rel="noopener" href="http://www.doc88.com/p-1327381288501.html">零知识证明及其应用</a>。虽然这篇论文不过是一些资料的复制粘贴，但好在是中文的。</p>
 <blockquote>
 <p>零知识证明是一种认证协议，A向B证明自己拥有“某种东西”，而不会给B有使用自己特性的机会，也就是让B拥有向别人证明他是A的能力。</p>
 </blockquote>

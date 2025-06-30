@@ -6,12 +6,12 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="HandheldFriendly" content="True">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
-    <meta name="description" content="Why use ConfigureAwait(false)思考当我们写下这样的代码时，发生了什么？ 12345678public async Task BuyJuice()&#123;    await WaitInQueue();    Pay();    await GetJuice();&#125;  What happened in async&#x2F;await内部原理参考这篇 文章">
+    <meta name="description" content="Why use ConfigureAwait(false)思考当我们写下这样的代码时，发生了什么？ 12345678public async Task BuyJuice()&#123;    await WaitInQueue();    Pay();    await GetJuice();&#125; What happened in async&#x2F;await内部原理参考这篇 文章 简单地来说，">
 <meta property="og:type" content="article">
 <meta property="og:title" content="why use ConfigureAwait">
 <meta property="og:url" content="https://zhaosima.github.io/2018/12/14/why-use-ConfigureAwait/">
 <meta property="og:site_name" content="WindFlow">
-<meta property="og:description" content="Why use ConfigureAwait(false)思考当我们写下这样的代码时，发生了什么？ 12345678public async Task BuyJuice()&#123;    await WaitInQueue();    Pay();    await GetJuice();&#125;  What happened in async&#x2F;await内部原理参考这篇 文章">
+<meta property="og:description" content="Why use ConfigureAwait(false)思考当我们写下这样的代码时，发生了什么？ 12345678public async Task BuyJuice()&#123;    await WaitInQueue();    Pay();    await GetJuice();&#125; What happened in async&#x2F;await内部原理参考这篇 文章 简单地来说，">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2018-12-14T09:15:53.000Z">
 <meta property="article:modified_time" content="2025-06-12T02:21:03.007Z">
@@ -55,7 +55,21 @@
     
 	<!-- mathjax -->
 	
-<meta name="generator" content="Hexo 7.3.0"></head>
+		<script type="text/x-mathjax-config">
+		  MathJax.Hub.Config({
+			tex2jax: {
+			  skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+			  inlineMath: [['$','$']]
+			}
+		  });
+		</script>
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML' async></script>
+	
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
+<!-- hexo injector head_end end --><meta name="generator" content="Hexo 7.3.0"></head>
 
 <body class="max-width mx-auto px3 ltr">
     
@@ -154,10 +168,9 @@
   
 
   <div class="content e-content" itemprop="articleBody">
-    <h1 id="Why-use-ConfigureAwait-false"><a href="#Why-use-ConfigureAwait-false" class="headerlink" title="Why use ConfigureAwait(false)"></a>Why use ConfigureAwait(false)</h1><p>思考当我们写下这样的代码时，发生了什么？</p>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/hint.css/2.4.1/hint.min.css"><h1 id="Why-use-ConfigureAwait-false"><a href="#Why-use-ConfigureAwait-false" class="headerlink" title="Why use ConfigureAwait(false)"></a>Why use ConfigureAwait(false)</h1><p>思考当我们写下这样的代码时，发生了什么？</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> async Task <span class="title function_">BuyJuice</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">    await <span class="title function_">WaitInQueue</span><span class="params">()</span>;</span><br><span class="line"></span><br><span class="line">    Pay();</span><br><span class="line"></span><br><span class="line">    await <span class="title function_">GetJuice</span><span class="params">()</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="What-happened-in-async-await"><a href="#What-happened-in-async-await" class="headerlink" title="What happened in async&#x2F;await"></a>What happened in async&#x2F;await</h2><p>内部原理参考这篇 <a target="_blank" rel="noopener" href="https://weblogs.asp.net/dixin/understanding-c-sharp-async-await-1-compilation">文章</a></p>
+<h2 id="What-happened-in-async-await"><a href="#What-happened-in-async-await" class="headerlink" title="What happened in async/await"></a>What happened in async/await</h2><p>内部原理参考这篇 <a target="_blank" rel="noopener" href="https://weblogs.asp.net/dixin/understanding-c-sharp-async-await-1-compilation">文章</a></p>
 <p>简单地来说，编译器会将 async 方法转化为 AsyncStateMachine。 而 await 会转化为 StateMachine.MoveNext() 方法内部的 GetAwaiter();。接着判断 awaiter 是否 Completed。 如果没有，则阻塞等待。 等待结束后，变更状态。如果还有后续任务，则继续调用MoveNext(); StateMachine 根据上一步的状态来决定当前的操作。</p>
 <p>需要注意的是，不管方法是否有 async 标识，只要返回了 Task，都是 awaitable 。</p>
 <h2 id="What’s-more"><a href="#What’s-more" class="headerlink" title="What’s more"></a>What’s more</h2><p>当创建一个 Task 的时候，会捕捉当前线程的 ExecuteionContext。当 Task Start 时，会将自己 push 到线程池的任务队列中。 当线程池调度到某个线程，线程会从池队列中捞取一个 Task。 然后通过 ExecuteionContext 的静态方法 RunXXX 来执行 Task。</p>
@@ -165,7 +178,7 @@
 <p>The ExecutionContext class provides a single container for all information relevant to a logical thread of execution. This includes security context, call context, and synchronization context.<br>The ExecutionContext class provides the functionality for user code to capture and transfer this context across user-defined asynchronous points. The common language runtime ensures that the ExecutionContext is consistently transferred across runtime-defined asynchronous points within the managed process.”</p>
 </blockquote>
 <p>flow ExecutionContext 是指从创建 Task 时从一个线程中捕捉 ExecutionContext, 并在执行时”<em>复制</em>“到运行的线程中。主要是用来做数据共享。</p>
-<h2 id="What-is-SynchronizationContext"><a href="#What-is-SynchronizationContext" class="headerlink" title="What is SynchronizationContext"></a>What is SynchronizationContext</h2><p>SynchronizationContext 类是一个基类，可提供不带同步的自由线程上下文。 此类实现的同步模型的目的是使公共语言运行库内部的异步&#x2F;同步操作能够针对不同的异步模型采取正确的行为。此模型还简化了托管应用程序为在不同的同步环境下正常工作而必须遵循的一些要求。同步模型的提供程序可以扩展此类并为这些方法提供自己的实现。【MSDN】</p>
+<h2 id="What-is-SynchronizationContext"><a href="#What-is-SynchronizationContext" class="headerlink" title="What is SynchronizationContext"></a>What is SynchronizationContext</h2><p>SynchronizationContext 类是一个基类，可提供不带同步的自由线程上下文。 此类实现的同步模型的目的是使公共语言运行库内部的异步/同步操作能够针对不同的异步模型采取正确的行为。此模型还简化了托管应用程序为在不同的同步环境下正常工作而必须遵循的一些要求。同步模型的提供程序可以扩展此类并为这些方法提供自己的实现。【MSDN】</p>
 <p>SynchronizationContext 提供了一种高级别的抽象。</p>
 <p>这篇<a target="_blank" rel="noopener" href="https://blogs.msdn.microsoft.com/pfxteam/2012/06/15/executioncontext-vs-synchronizationcontext/">文章</a>讲述了 ExecutionContext 与 SynchronizationContext 之间的差异。</p>
 <ol>

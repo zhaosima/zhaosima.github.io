@@ -13,12 +13,12 @@
 <meta property="og:site_name" content="WindFlow">
 <meta property="og:description" content="如何做到约定优于配置不同于.net framework的asp.net项目，asp.net core的启动入口直接就是Program.cs，就好像在写一个Console。启动代码非常的简洁，只有这么几句。 123456789public static void Main(string[] args)&#123;    BuildWebHost(args).Run();&#125;    publi">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://zhaosima.github.io/img/aibtc.png">
+<meta property="og:image" content="https://zhaosima.github.io/2017/09/13/img/aibtc.png">
 <meta property="article:published_time" content="2017-09-13T02:54:24.000Z">
 <meta property="article:modified_time" content="2025-06-12T02:21:02.970Z">
 <meta property="article:author" content="WindFlow">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://zhaosima.github.io/img/aibtc.png">
+<meta name="twitter:image" content="https://zhaosima.github.io/2017/09/13/img/aibtc.png">
     
     
       
@@ -57,7 +57,21 @@
     
 	<!-- mathjax -->
 	
-<meta name="generator" content="Hexo 7.3.0"></head>
+		<script type="text/x-mathjax-config">
+		  MathJax.Hub.Config({
+			tex2jax: {
+			  skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+			  inlineMath: [['$','$']]
+			}
+		  });
+		</script>
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML' async></script>
+	
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
+<!-- hexo injector head_end end --><meta name="generator" content="Hexo 7.3.0"></head>
 
 <body class="max-width mx-auto px3 ltr">
     
@@ -156,11 +170,10 @@
   
 
   <div class="content e-content" itemprop="articleBody">
-    <h2 id="如何做到约定优于配置"><a href="#如何做到约定优于配置" class="headerlink" title="如何做到约定优于配置"></a>如何做到约定优于配置</h2><p>不同于.net framework的asp.net项目，asp.net core的启动入口直接就是Program.cs，就好像在写一个Console。启动代码非常的简洁，只有这么几句。</p>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/hint.css/2.4.1/hint.min.css"><h2 id="如何做到约定优于配置"><a href="#如何做到约定优于配置" class="headerlink" title="如何做到约定优于配置"></a>如何做到约定优于配置</h2><p>不同于.net framework的asp.net项目，asp.net core的启动入口直接就是Program.cs，就好像在写一个Console。启动代码非常的简洁，只有这么几句。</p>
 <figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">Main</span>(<span class="params"><span class="built_in">string</span>[] <span class="keyword">args</span></span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    BuildWebHost(<span class="keyword">args</span>).Run();</span><br><span class="line">&#125;</span><br><span class="line">    </span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> IWebHost <span class="title">BuildWebHost</span>(<span class="params"><span class="built_in">string</span>[] <span class="keyword">args</span></span>)</span> =&gt;</span><br><span class="line">    WebHost.CreateDefaultBuilder(<span class="keyword">args</span>)</span><br><span class="line">        .UseStartup&lt;Startup&gt;()</span><br><span class="line">        .Build();</span><br></pre></td></tr></table></figure>
-
 <p>粗看上去没什么花样，但是请注意这里的StartUp。 查看它的定义，你会惊奇的发现它没有继承任何接口，但是提供了两个Config方法用于初始化Service和App。</p>
-<p>那么这两个方法是怎么被调用的呢？ 带着这个疑问，我去翻看了 Microsoft.AspNetCore.Hosting 的<a target="_blank" rel="noopener" href="https://github.com/aspnet/Hosting">源码</a>。对于代码的细节就不做详细描述了，其内部思想如下图<br><img src="/../img/aibtc.png"> </p>
+<p>那么这两个方法是怎么被调用的呢？ 带着这个疑问，我去翻看了 Microsoft.AspNetCore.Hosting 的<a target="_blank" rel="noopener" href="https://github.com/aspnet/Hosting">源码</a>。对于代码的细节就不做详细描述了，其内部思想如下图<br><img src="../img/aibtc.png" alt=""> </p>
 <p>上面贴出的启动代码体现了一种思想，约定好于配置。只要一个类实现了某些方法，它就可以被作为某种接口被调用。是不是有点像Golang的duck type。</p>
 <p>最后，我也写了一段模仿实现的代码，在<a target="_blank" rel="noopener" href="https://github.com/simazhao/show-me-the-code/tree/master/dotnet/core/AgreementBetterThanConfig">这里</a>。</p>
 

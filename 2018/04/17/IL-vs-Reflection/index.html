@@ -55,7 +55,21 @@
     
 	<!-- mathjax -->
 	
-<meta name="generator" content="Hexo 7.3.0"></head>
+		<script type="text/x-mathjax-config">
+		  MathJax.Hub.Config({
+			tex2jax: {
+			  skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+			  inlineMath: [['$','$']]
+			}
+		  });
+		</script>
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML' async></script>
+	
+<!-- hexo injector head_end start -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
+<!-- hexo injector head_end end --><meta name="generator" content="Hexo 7.3.0"></head>
 
 <body class="max-width mx-auto px3 ltr">
     
@@ -154,22 +168,17 @@
   
 
   <div class="content e-content" itemprop="articleBody">
-    <h2 id="IL-vs-Reflection"><a href="#IL-vs-Reflection" class="headerlink" title="IL vs Reflection"></a>IL vs Reflection</h2><p>最近在阅读某CQRS开源项目的源代码时，作者通过IL来生成绑定到interface具体子类的方法的调用，堪称巧妙。当然通过反射也可以实现，这么做的原因大概是为了效率。那么我来做个简单的测试，看效率差别有多大.</p>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/hint.css/2.4.1/hint.min.css"><h2 id="IL-vs-Reflection"><a href="#IL-vs-Reflection" class="headerlink" title="IL vs Reflection"></a>IL vs Reflection</h2><p>最近在阅读某CQRS开源项目的源代码时，作者通过IL来生成绑定到interface具体子类的方法的调用，堪称巧妙。当然通过反射也可以实现，这么做的原因大概是为了效率。那么我来做个简单的测试，看效率差别有多大.</p>
 <p>假设我们有个打招呼的程序</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Aloha</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">public</span> string <span class="title function_">Hello</span><span class="params">(string msg)</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">return</span> string.Format(<span class="string">&quot;Hello, &#123;0&#125;&quot;</span>, msg);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
 <p>那么通过反射来打招呼是这样的</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="type">MethodInfo</span> <span class="variable">hello</span> <span class="operator">=</span> typeof(Aloha).GetMethod(<span class="string">&quot;Hello&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> string <span class="title function_">SayHello</span><span class="params">(Aloha hi, string m)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">return</span> hello.Invoke(hi, <span class="keyword">new</span>[] &#123; m &#125;) as string;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
 <p>接着通过IL来回应是这样的</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> Func&lt;string, string&gt; <span class="title function_">SayHelloToo</span><span class="params">(Aloha hi)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">var</span> <span class="variable">dm</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">DynamicMethod</span>(<span class="string">&quot;SayHelloToo&quot;</span>, typeof(string), <span class="keyword">new</span>[] &#123;typeof(Aloha), typeof(string) &#125;, typeof(Aloha));</span><br><span class="line">    <span class="type">var</span> <span class="variable">gen</span> <span class="operator">=</span> dm.GetILGenerator();</span><br><span class="line"></span><br><span class="line">    gen.Emit(OpCodes.Ldarg_0);</span><br><span class="line">    gen.Emit(OpCodes.Ldarg_1);</span><br><span class="line">    gen.Emit(OpCodes.Call, hello);</span><br><span class="line">    gen.Emit(OpCodes.Ret);</span><br><span class="line"></span><br><span class="line">    <span class="type">var</span> <span class="variable">m</span> <span class="operator">=</span> dm.CreateDelegate(typeof(Func&lt;Aloha, string, string&gt;)) as Func&lt;Aloha, string, string&gt;;</span><br><span class="line"></span><br><span class="line">    <span class="type">return</span> <span class="variable">s</span> <span class="operator">=</span>&gt; m(hi, s);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
 <p>接下来就让我们看看怎么调用</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">var</span> <span class="variable">hi</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Aloha</span>();</span><br><span class="line"><span class="type">var</span> <span class="variable">sayhelloFunc</span> <span class="operator">=</span> SayHelloToo(hi);</span><br><span class="line"><span class="type">var</span> <span class="variable">loopCount</span> <span class="operator">=</span> <span class="number">10000000</span>;</span><br><span class="line"></span><br><span class="line">Tune(<span class="string">&quot;For Reflect&quot;</span>, m =&gt; SayHello(hi, m), loopCount);</span><br><span class="line">Tune(<span class="string">&quot;For IL     &quot;</span>, m =&gt; sayhelloFunc(m), loopCount);</span><br><span class="line">Tune(<span class="string">&quot;For Direct &quot;</span>, m =&gt; hi.Hello(m), loopCount);</span><br></pre></td></tr></table></figure>
-
 <p>调用结果</p>
 <figure class="highlight m"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">[For Reflect] loop <span class="number">1000000</span> cost <span class="number">00</span>:<span class="number">00</span>:<span class="number">00.4748191</span></span><br><span class="line">[For IL     ] loop <span class="number">1000000</span> cost <span class="number">00</span>:<span class="number">00</span>:<span class="number">00.1292819</span></span><br><span class="line">[For Direct ] loop <span class="number">1000000</span> cost <span class="number">00</span>:<span class="number">00</span>:<span class="number">00.1290007</span></span><br><span class="line"></span><br><span class="line">[For Reflect] loop <span class="number">1000000</span> cost <span class="number">00</span>:<span class="number">00</span>:<span class="number">00.4798441</span></span><br><span class="line">[For IL     ] loop <span class="number">1000000</span> cost <span class="number">00</span>:<span class="number">00</span>:<span class="number">00.1282383</span></span><br><span class="line">[For Direct ] loop <span class="number">1000000</span> cost <span class="number">00</span>:<span class="number">00</span>:<span class="number">00.1297988</span></span><br><span class="line"></span><br><span class="line">[For Reflect] loop <span class="number">1000000</span> cost <span class="number">00</span>:<span class="number">00</span>:<span class="number">00.5172965</span></span><br><span class="line">[For IL     ] loop <span class="number">1000000</span> cost <span class="number">00</span>:<span class="number">00</span>:<span class="number">00.1312012</span></span><br><span class="line">[For Direct ] loop <span class="number">1000000</span> cost <span class="number">00</span>:<span class="number">00</span>:<span class="number">00.1271685</span></span><br></pre></td></tr></table></figure>
-
 <p>可以看到效率差了4倍。 原因在于hi.Hello会被编译成相似SayHelloToo的IL代码，因此它们的执行效率相近。</p>
 <p>注意，实际运用中不要每次都为相同场景生成IL代码，这样做反而非常影响效率，正确做法是缓存methodinfo或者type。</p>
 
